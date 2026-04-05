@@ -1,9 +1,13 @@
+import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Users, FileText, Bell, FolderOpen, Plus } from "lucide-react";
+import { LayoutDashboard, Users, FileText, Bell, FolderOpen, Plus, LogOut, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/App";
 
 export function MobileLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
+  const { user, logout } = useAuth();
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   const getSection = () => {
     if (location.startsWith("/members")) return "members";
@@ -34,6 +38,47 @@ export function MobileLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-[100dvh] max-w-[480px] mx-auto bg-background pb-[76px] relative flex flex-col shadow-2xl ring-1 ring-border">
+      {user && (
+        <div className="flex items-center justify-end px-4 py-2 border-b border-border/50 bg-background/95 backdrop-blur-sm">
+          <div className="relative">
+            <button
+              onClick={() => setShowUserMenu((v) => !v)}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors py-1 px-2 rounded-lg hover:bg-muted/50"
+            >
+              <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
+                <span className="text-[9px] font-bold text-primary uppercase">
+                  {user.displayName.charAt(0)}
+                </span>
+              </div>
+              <span className="font-medium">{user.displayName}</span>
+              <ChevronDown className="w-3 h-3" />
+            </button>
+
+            {showUserMenu && (
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setShowUserMenu(false)}
+                />
+                <div className="absolute right-0 top-full mt-1 z-50 bg-popover border border-border rounded-xl shadow-xl min-w-[160px] overflow-hidden">
+                  <div className="px-3 py-2.5 border-b border-border">
+                    <p className="text-xs font-bold text-foreground">{user.displayName}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">@{user.username}</p>
+                  </div>
+                  <button
+                    onClick={() => { setShowUserMenu(false); logout(); }}
+                    className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Sign Out
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       <main className="flex-1 overflow-y-auto no-scrollbar relative w-full">
         {children}
       </main>
