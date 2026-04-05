@@ -1,0 +1,38 @@
+# Version control
+.git
+.gitignore
+
+# Dependencies — reinstalled inside Docker
+**/node_modules
+
+# Build output — rebuilt inside Docker
+**/dist
+artifacts/pwa-app/dist
+
+# Replit-specific
+.replit
+.replitignore
+.local
+replit.md
+.upm
+
+# Secrets / env
+.env
+.env.*
+
+# Logs
+**/*.log
+pnpm-debug.log*
+
+# Editor
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test / coverage
+coverage
