@@ -4,17 +4,20 @@ import * as schema from "./schema";
 
 const { Pool } = pg;
 
-if (!process.env.DATABASE_URL) {
+const connectionString = process.env.PG_URL || process.env.DATABASE_URL;
+
+if (!connectionString) {
   throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
+    "PG_URL must be set. Add your external PostgreSQL connection string as a secret.",
   );
 }
 
-const isNeon = process.env.DATABASE_URL.includes("neon.tech");
+const isNeon = connectionString.includes("neon.tech");
+const isSupabase = connectionString.includes("supabase.com");
 
 export const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: isNeon ? { rejectUnauthorized: false } : undefined,
+  connectionString,
+  ssl: (isNeon || isSupabase) ? { rejectUnauthorized: false } : undefined,
 });
 
 export const db = drizzle(pool, { schema });
