@@ -3,22 +3,28 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: API specification for Union Local 1285 Steward App
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
-  - name: tasks
-    description: Task management
+  - name: members
+    description: Union member management
+  - name: grievances
+    description: Grievance tracking
+  - name: announcements
+    description: Union bulletins and announcements
+  - name: dashboard
+    description: Dashboard summaries
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -27,54 +33,56 @@ paths:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
 
-  /tasks:
+  /members:
     get:
-      operationId: listTasks
-      tags: [tasks]
-      summary: List all tasks
+      operationId: listMembers
+      tags: [members]
+      summary: List all members
       parameters:
         - in: query
-          name: status
+          name: department
           schema:
             type: string
-            enum: [pending, in_progress, completed]
         - in: query
-          name: priority
+          name: classification
           schema:
             type: string
-            enum: [low, medium, high]
+        - in: query
+          name: search
+          schema:
+            type: string
       responses:
         "200":
-          description: List of tasks
+          description: List of members
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/Task"
+                  $ref: "#/components/schemas/Member"
     post:
-      operationId: createTask
-      tags: [tasks]
-      summary: Create a new task
+      operationId: createMember
+      tags: [members]
+      summary: Add a new member
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateTaskBody"
+              $ref: "#/components/schemas/CreateMemberBody"
       responses:
         "201":
-          description: Created task
+          description: Created member
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Task"
+                $ref: "#/components/schemas/Member"
 
-  /tasks/{id}:
+  /members/{id}:
     get:
-      operationId: getTask
-      tags: [tasks]
-      summary: Get a task by ID
+      operationId: getMember
+      tags: [members]
+      summary: Get a member by ID
       parameters:
         - in: path
           name: id
@@ -83,17 +91,17 @@ paths:
             type: integer
       responses:
         "200":
-          description: Task
+          description: Member
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Task"
+                $ref: "#/components/schemas/Member"
         "404":
           description: Not found
     patch:
-      operationId: updateTask
-      tags: [tasks]
-      summary: Update a task
+      operationId: updateMember
+      tags: [members]
+      summary: Update a member
       parameters:
         - in: path
           name: id
@@ -105,18 +113,18 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UpdateTaskBody"
+              $ref: "#/components/schemas/UpdateMemberBody"
       responses:
         "200":
-          description: Updated task
+          description: Updated member
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Task"
+                $ref: "#/components/schemas/Member"
     delete:
-      operationId: deleteTask
-      tags: [tasks]
-      summary: Delete a task
+      operationId: deleteMember
+      tags: [members]
+      summary: Remove a member
       parameters:
         - in: path
           name: id
@@ -127,39 +135,261 @@ paths:
         "204":
           description: Deleted
 
-  /tasks/stats/summary:
+  /members/{id}/grievances:
     get:
-      operationId: getTasksSummary
-      tags: [tasks]
-      summary: Get tasks statistics summary
-      responses:
-        "200":
-          description: Summary stats
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/TasksSummary"
-
-  /tasks/recent:
-    get:
-      operationId: getRecentTasks
-      tags: [tasks]
-      summary: Get recently updated tasks
+      operationId: getMemberGrievances
+      tags: [members]
+      summary: Get grievances for a specific member
       parameters:
-        - in: query
-          name: limit
+        - in: path
+          name: id
+          required: true
           schema:
             type: integer
-            default: 5
       responses:
         "200":
-          description: Recent tasks
+          description: List of grievances for member
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/Task"
+                  $ref: "#/components/schemas/Grievance"
+
+  /grievances:
+    get:
+      operationId: listGrievances
+      tags: [grievances]
+      summary: List all grievances
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [open, pending_response, pending_hearing, resolved, withdrawn]
+        - in: query
+          name: step
+          schema:
+            type: integer
+        - in: query
+          name: memberId
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of grievances
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Grievance"
+    post:
+      operationId: createGrievance
+      tags: [grievances]
+      summary: File a new grievance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateGrievanceBody"
+      responses:
+        "201":
+          description: Filed grievance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Grievance"
+
+  /grievances/{id}:
+    get:
+      operationId: getGrievance
+      tags: [grievances]
+      summary: Get a grievance by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Grievance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Grievance"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateGrievance
+      tags: [grievances]
+      summary: Update a grievance
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateGrievanceBody"
+      responses:
+        "200":
+          description: Updated grievance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Grievance"
+    delete:
+      operationId: deleteGrievance
+      tags: [grievances]
+      summary: Delete a grievance
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /grievances/stats/summary:
+    get:
+      operationId: getGrievancesSummary
+      tags: [grievances]
+      summary: Get grievance statistics
+      responses:
+        "200":
+          description: Grievance stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GrievancesSummary"
+
+  /announcements:
+    get:
+      operationId: listAnnouncements
+      tags: [announcements]
+      summary: List announcements
+      parameters:
+        - in: query
+          name: category
+          schema:
+            type: string
+            enum: [general, urgent, contract, meeting, action]
+      responses:
+        "200":
+          description: List of announcements
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Announcement"
+    post:
+      operationId: createAnnouncement
+      tags: [announcements]
+      summary: Post a new announcement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAnnouncementBody"
+      responses:
+        "201":
+          description: Created announcement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Announcement"
+
+  /announcements/{id}:
+    get:
+      operationId: getAnnouncement
+      tags: [announcements]
+      summary: Get an announcement by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Announcement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Announcement"
+    patch:
+      operationId: updateAnnouncement
+      tags: [announcements]
+      summary: Update an announcement
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAnnouncementBody"
+      responses:
+        "200":
+          description: Updated announcement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Announcement"
+    delete:
+      operationId: deleteAnnouncement
+      tags: [announcements]
+      summary: Delete an announcement
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get dashboard summary stats
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /dashboard/recent-activity:
+    get:
+      operationId: getRecentActivity
+      tags: [dashboard]
+      summary: Get recent grievances and announcements
+      responses:
+        "200":
+          description: Recent activity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecentActivity"
 
 components:
   schemas:
@@ -168,28 +398,38 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
-    Task:
+    Member:
       type: object
       properties:
         id:
           type: integer
-        title:
+        name:
           type: string
-        description:
+        employeeId:
           type: string
           nullable: true
-        status:
+        department:
           type: string
-          enum: [pending, in_progress, completed]
-        priority:
+          nullable: true
+        classification:
           type: string
-          enum: [low, medium, high]
-        dueDate:
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        joinDate:
           type: string
           format: date
+          nullable: true
+        isActive:
+          type: boolean
+        notes:
+          type: string
           nullable: true
         createdAt:
           type: string
@@ -197,75 +437,298 @@ components:
         updatedAt:
           type: string
           format: date-time
-      required:
-        - id
-        - title
-        - status
-        - priority
-        - createdAt
-        - updatedAt
+      required: [id, name, isActive, createdAt, updatedAt]
 
-    CreateTaskBody:
+    CreateMemberBody:
       type: object
       properties:
+        name:
+          type: string
+        employeeId:
+          type: string
+          nullable: true
+        department:
+          type: string
+          nullable: true
+        classification:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        joinDate:
+          type: string
+          format: date
+          nullable: true
+        isActive:
+          type: boolean
+          default: true
+        notes:
+          type: string
+          nullable: true
+      required: [name]
+
+    UpdateMemberBody:
+      type: object
+      properties:
+        name:
+          type: string
+        employeeId:
+          type: string
+          nullable: true
+        department:
+          type: string
+          nullable: true
+        classification:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        joinDate:
+          type: string
+          format: date
+          nullable: true
+        isActive:
+          type: boolean
+        notes:
+          type: string
+          nullable: true
+
+    Grievance:
+      type: object
+      properties:
+        id:
+          type: integer
+        grievanceNumber:
+          type: string
+        memberId:
+          type: integer
+          nullable: true
+        memberName:
+          type: string
+          nullable: true
         title:
           type: string
         description:
           type: string
           nullable: true
+        contractArticle:
+          type: string
+          nullable: true
+        step:
+          type: integer
         status:
           type: string
-          enum: [pending, in_progress, completed]
-          default: pending
-        priority:
+          enum: [open, pending_response, pending_hearing, resolved, withdrawn]
+        filedDate:
           type: string
-          enum: [low, medium, high]
-          default: medium
+          format: date
         dueDate:
           type: string
           format: date
           nullable: true
-      required:
-        - title
+        resolvedDate:
+          type: string
+          format: date
+          nullable: true
+        resolution:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, grievanceNumber, title, step, status, filedDate, createdAt, updatedAt]
 
-    UpdateTaskBody:
+    CreateGrievanceBody:
       type: object
       properties:
+        memberId:
+          type: integer
+          nullable: true
         title:
           type: string
         description:
           type: string
           nullable: true
+        contractArticle:
+          type: string
+          nullable: true
+        step:
+          type: integer
+          default: 1
         status:
           type: string
-          enum: [pending, in_progress, completed]
-        priority:
+          enum: [open, pending_response, pending_hearing, resolved, withdrawn]
+          default: open
+        filedDate:
           type: string
-          enum: [low, medium, high]
+          format: date
         dueDate:
           type: string
           format: date
           nullable: true
+        notes:
+          type: string
+          nullable: true
+      required: [title, filedDate]
 
-    TasksSummary:
+    UpdateGrievanceBody:
+      type: object
+      properties:
+        memberId:
+          type: integer
+          nullable: true
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        contractArticle:
+          type: string
+          nullable: true
+        step:
+          type: integer
+        status:
+          type: string
+          enum: [open, pending_response, pending_hearing, resolved, withdrawn]
+        filedDate:
+          type: string
+          format: date
+        dueDate:
+          type: string
+          format: date
+          nullable: true
+        resolvedDate:
+          type: string
+          format: date
+          nullable: true
+        resolution:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+
+    GrievancesSummary:
       type: object
       properties:
         total:
           type: integer
-        pending:
+        open:
           type: integer
-        in_progress:
+        pending_response:
           type: integer
-        completed:
+        pending_hearing:
           type: integer
-        high_priority:
+        resolved:
           type: integer
-        due_today:
+        withdrawn:
           type: integer
-      required:
-        - total
-        - pending
-        - in_progress
-        - completed
-        - high_priority
-        - due_today
+        overdue:
+          type: integer
+        step1:
+          type: integer
+        step2:
+          type: integer
+        step3:
+          type: integer
+        step4:
+          type: integer
+      required: [total, open, pending_response, pending_hearing, resolved, withdrawn, overdue, step1, step2, step3, step4]
+
+    Announcement:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        content:
+          type: string
+        category:
+          type: string
+          enum: [general, urgent, contract, meeting, action]
+        isUrgent:
+          type: boolean
+        publishedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, title, content, category, isUrgent, publishedAt, createdAt, updatedAt]
+
+    CreateAnnouncementBody:
+      type: object
+      properties:
+        title:
+          type: string
+        content:
+          type: string
+        category:
+          type: string
+          enum: [general, urgent, contract, meeting, action]
+          default: general
+        isUrgent:
+          type: boolean
+          default: false
+      required: [title, content]
+
+    UpdateAnnouncementBody:
+      type: object
+      properties:
+        title:
+          type: string
+        content:
+          type: string
+        category:
+          type: string
+          enum: [general, urgent, contract, meeting, action]
+        isUrgent:
+          type: boolean
+
+    DashboardSummary:
+      type: object
+      properties:
+        totalMembers:
+          type: integer
+        activeMembers:
+          type: integer
+        openGrievances:
+          type: integer
+        overdueGrievances:
+          type: integer
+        grievancesThisMonth:
+          type: integer
+        urgentAnnouncements:
+          type: integer
+      required: [totalMembers, activeMembers, openGrievances, overdueGrievances, grievancesThisMonth, urgentAnnouncements]
+
+    RecentActivity:
+      type: object
+      properties:
+        recentGrievances:
+          type: array
+          items:
+            $ref: "#/components/schemas/Grievance"
+        recentAnnouncements:
+          type: array
+          items:
+            $ref: "#/components/schemas/Announcement"
+      required: [recentGrievances, recentAnnouncements]

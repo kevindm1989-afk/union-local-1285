@@ -60,55 +60,55 @@
   --elevate-1: rgba(0,0,0, .03);
   --elevate-2: rgba(0,0,0, .08);
 
-  /* Deep Indigo theme for premium productivity */
-  --background: 40 20% 98%; /* Warm off-white #faf9f7 */
-  --foreground: 233 20% 15%; /* Deep gray/blue #1f2333 */
+  /* Solid Union Red / Industrial Theme */
+  --background: 0 0% 98%;
+  --foreground: 0 0% 15%; 
   
   --card: 0 0% 100%;
-  --card-foreground: 233 20% 15%;
-  --card-border: 220 13% 91%;
+  --card-foreground: 0 0% 15%;
+  --card-border: 0 0% 90%;
   
   --popover: 0 0% 100%;
-  --popover-foreground: 233 20% 15%;
-  --popover-border: 220 13% 91%;
+  --popover-foreground: 0 0% 15%;
+  --popover-border: 0 0% 90%;
   
-  /* Primary: Indigo */
-  --primary: 243 75% 59%; /* #4f46e5 */
+  /* Primary: Deep Union Red #b91c1c */
+  --primary: 0 74% 42%;
   --primary-foreground: 0 0% 100%;
   
-  /* Secondary: Soft Gray */
-  --secondary: 220 14% 96%;
-  --secondary-foreground: 233 20% 15%;
+  /* Secondary: Industrial Steel */
+  --secondary: 210 20% 96%;
+  --secondary-foreground: 210 20% 20%;
   
   /* Muted */
-  --muted: 220 14% 96%;
-  --muted-foreground: 220 9% 46%;
+  --muted: 210 20% 96%;
+  --muted-foreground: 210 10% 46%;
   
   /* Accent */
-  --accent: 220 14% 96%;
-  --accent-foreground: 233 20% 15%;
+  --accent: 210 20% 96%;
+  --accent-foreground: 0 0% 15%;
   
   /* Destructive */
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
   
-  --border: 220 13% 91%;
-  --input: 220 13% 91%;
-  --ring: 243 75% 59%;
+  --border: 0 0% 90%;
+  --input: 0 0% 90%;
+  --ring: 0 74% 42%;
 
   --app-font-sans: 'Plus Jakarta Sans', sans-serif;
   --app-font-serif: Georgia, serif;
   --app-font-mono: Menlo, monospace;
-  --radius: 1rem;
+  --radius: 0.5rem; /* Slightly boxier, less playful */
   
   --sidebar: 0 0% 100%;
-  --sidebar-foreground: 233 20% 15%;
-  --sidebar-border: 220 13% 91%;
-  --sidebar-primary: 243 75% 59%;
+  --sidebar-foreground: 0 0% 15%;
+  --sidebar-border: 0 0% 90%;
+  --sidebar-primary: 0 74% 42%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 220 14% 96%;
-  --sidebar-accent-foreground: 233 20% 15%;
-  --sidebar-ring: 243 75% 59%;
+  --sidebar-accent: 210 20% 96%;
+  --sidebar-accent-foreground: 0 0% 15%;
+  --sidebar-ring: 0 74% 42%;
 
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
@@ -117,44 +117,44 @@
 }
 
 .dark {
-  --background: 233 20% 10%;
-  --foreground: 220 14% 96%;
+  --background: 0 0% 10%;
+  --foreground: 0 0% 95%;
   
-  --card: 233 20% 13%;
-  --card-foreground: 220 14% 96%;
-  --card-border: 233 20% 20%;
+  --card: 0 0% 14%;
+  --card-foreground: 0 0% 95%;
+  --card-border: 0 0% 20%;
   
-  --popover: 233 20% 13%;
-  --popover-foreground: 220 14% 96%;
-  --popover-border: 233 20% 20%;
+  --popover: 0 0% 14%;
+  --popover-foreground: 0 0% 95%;
+  --popover-border: 0 0% 20%;
   
-  --primary: 243 75% 59%;
+  --primary: 0 74% 42%;
   --primary-foreground: 0 0% 100%;
   
-  --secondary: 233 20% 20%;
-  --secondary-foreground: 220 14% 96%;
+  --secondary: 0 0% 20%;
+  --secondary-foreground: 0 0% 95%;
   
-  --muted: 233 20% 20%;
-  --muted-foreground: 220 9% 60%;
+  --muted: 0 0% 20%;
+  --muted-foreground: 0 0% 65%;
   
-  --accent: 233 20% 20%;
-  --accent-foreground: 220 14% 96%;
+  --accent: 0 0% 20%;
+  --accent-foreground: 0 0% 95%;
   
   --destructive: 0 62% 30%;
-  --destructive-foreground: 220 14% 96%;
+  --destructive-foreground: 0 0% 95%;
   
-  --border: 233 20% 20%;
-  --input: 233 20% 20%;
-  --ring: 243 75% 59%;
+  --border: 0 0% 20%;
+  --input: 0 0% 20%;
+  --ring: 0 74% 42%;
   
-  --sidebar: 233 20% 13%;
-  --sidebar-foreground: 220 14% 96%;
-  --sidebar-border: 233 20% 20%;
-  --sidebar-primary: 243 75% 59%;
+  --sidebar: 0 0% 14%;
+  --sidebar-foreground: 0 0% 95%;
+  --sidebar-border: 0 0% 20%;
+  --sidebar-primary: 0 74% 42%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 233 20% 20%;
-  --sidebar-accent-foreground: 220 14% 96%;
-  --sidebar-ring: 243 75% 59%;
+  --sidebar-accent: 0 0% 20%;
+  --sidebar-accent-foreground: 0 0% 95%;
+  --sidebar-ring: 0 74% 42%;
 }
 
 @layer base {
@@ -174,114 +174,13 @@
   scrollbar-width: none;
 }
 
-/**
- * Using the elevate system.
- * Automatic contrast adjustment.
- *
- * <element className="hover-elevate" />
- * <element className="active-elevate-2" />
- *
- * // Using the tailwind utility when a data attribute is "on"
- * <element className="toggle-elevate data-[state=on]:toggle-elevated" />
- * // Or manually controlling the toggle state
- * <element className="toggle-elevate toggle-elevated" />
- *
- * Elevation systems have to handle many states.
- * - not-hovered, vs. hovered vs. active  (three mutually exclusive states)
- * - toggled or not
- * - focused or not (this is not handled with these utilities)
- *
- * Even without handling focused or not, this is six possible combinations that
- * need to be distinguished from eachother visually.
- */
 @layer utilities {
-
-  /* Hide ugly search cancel button in Chrome until we can style it properly */
   input[type="search"]::-webkit-search-cancel-button {
     @apply hidden;
   }
-
-  /* Placeholder styling for contentEditable div */
   [contenteditable][data-placeholder]:empty::before {
     content: attr(data-placeholder);
     color: hsl(var(--muted-foreground));
     pointer-events: none;
-  }
-
-  /* .no-default-hover-elevate/no-default-active-elevate is an escape hatch so consumers of
-   * buttons/badges can remove the automatic brightness adjustment on interactions
-   * and program their own. */
-  .no-default-hover-elevate {}
-
-  .no-default-active-elevate {}
-
-
-  /**
-   * Toggleable backgrounds go behind the content. Hoverable/active goes on top.
-   * This way they can stack/compound. Both will overlap the parent's borders!
-   * So borders will be automatically adjusted both on toggle, and hover/active,
-   * and they will be compounded.
-   */
-  .toggle-elevate::before,
-  .toggle-elevate-2::before {
-    content: "";
-    pointer-events: none;
-    position: absolute;
-    inset: 0px;
-    /*border-radius: inherit;   match rounded corners */
-    border-radius: inherit;
-    z-index: -1;
-    /* sits behind content but above backdrop */
-  }
-
-  .toggle-elevate.toggle-elevated::before {
-    background-color: var(--elevate-2);
-  }
-
-  /* If there's a 1px border, adjust the inset so that it covers that parent's border */
-  .border.toggle-elevate::before {
-    inset: -1px;
-  }
-
-  /* Does not work on elements with overflow:hidden! */
-  .hover-elevate:not(.no-default-hover-elevate),
-  .active-elevate:not(.no-default-active-elevate),
-  .hover-elevate-2:not(.no-default-hover-elevate),
-  .active-elevate-2:not(.no-default-active-elevate) {
-    position: relative;
-    z-index: 0;
-  }
-
-  .hover-elevate:not(.no-default-hover-elevate)::after,
-  .active-elevate:not(.no-default-active-elevate)::after,
-  .hover-elevate-2:not(.no-default-hover-elevate)::after,
-  .active-elevate-2:not(.no-default-active-elevate)::after {
-    content: "";
-    pointer-events: none;
-    position: absolute;
-    inset: 0px;
-    /*border-radius: inherit;   match rounded corners */
-    border-radius: inherit;
-    z-index: 999;
-    /* sits in front of content */
-  }
-
-  .hover-elevate:hover:not(.no-default-hover-elevate)::after,
-  .active-elevate:active:not(.no-default-active-elevate)::after {
-    background-color: var(--elevate-1);
-  }
-
-  .hover-elevate-2:hover:not(.no-default-hover-elevate)::after,
-  .active-elevate-2:active:not(.no-default-active-elevate)::after {
-    background-color: var(--elevate-2);
-  }
-
-  /* If there's a 1px border, adjust the inset so that it covers that parent's border */
-  .border.hover-elevate:not(.no-hover-interaction-elevate)::after,
-  .border.active-elevate:not(.no-active-interaction-elevate)::after,
-  .border.hover-elevate-2:not(.no-hover-interaction-elevate)::after,
-  .border.active-elevate-2:not(.no-active-interaction-elevate)::after,
-  .border.hover-elevate:not(.no-hover-interaction-elevate)::after {
-    inset: -1px;
   }
 }

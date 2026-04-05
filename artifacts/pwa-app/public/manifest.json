@@ -1,7 +1,7 @@
 {
-  "name": "TaskFlow",
-  "short_name": "TaskFlow",
-  "description": "A personal productivity companion that lives on your phone's home screen.",
+  "name": "Union Local 1285",
+  "short_name": "Local 1285",
+  "description": "Steward App for Union Local 1285",
   "icons": [
     {
       "src": "/favicon.svg",
@@ -10,8 +10,8 @@
       "purpose": "any"
     }
   ],
-  "theme_color": "#ffffff",
-  "background_color": "#faf9f7",
+  "theme_color": "#b91c1c",
+  "background_color": "#ffffff",
   "display": "standalone",
   "start_url": "/",
   "orientation": "portrait"

@@ -5,9 +5,15 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 
 import Dashboard from "@/pages/Dashboard";
-import Tasks from "@/pages/Tasks";
-import TaskCreate from "@/pages/TaskCreate";
-import TaskDetail from "@/pages/TaskDetail";
+import Members from "@/pages/Members";
+import MemberCreate from "@/pages/MemberCreate";
+import MemberDetail from "@/pages/MemberDetail";
+import Grievances from "@/pages/Grievances";
+import GrievanceCreate from "@/pages/GrievanceCreate";
+import GrievanceDetail from "@/pages/GrievanceDetail";
+import Bulletins from "@/pages/Bulletins";
+import BulletinCreate from "@/pages/BulletinCreate";
+import BulletinDetail from "@/pages/BulletinDetail";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -22,9 +28,19 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
-      <Route path="/tasks" component={Tasks} />
-      <Route path="/tasks/new" component={TaskCreate} />
-      <Route path="/tasks/:id" component={TaskDetail} />
+      
+      <Route path="/members" component={Members} />
+      <Route path="/members/new" component={MemberCreate} />
+      <Route path="/members/:id" component={MemberDetail} />
+      
+      <Route path="/grievances" component={Grievances} />
+      <Route path="/grievances/new" component={GrievanceCreate} />
+      <Route path="/grievances/:id" component={GrievanceDetail} />
+      
+      <Route path="/bulletins" component={Bulletins} />
+      <Route path="/bulletins/new" component={BulletinCreate} />
+      <Route path="/bulletins/:id" component={BulletinDetail} />
+      
       <Route component={NotFound} />
     </Switch>
   );
