@@ -8,3 +8,118 @@
 export interface HealthStatus {
   status: string;
 }
+
+export type TaskStatus = (typeof TaskStatus)[keyof typeof TaskStatus];
+
+export const TaskStatus = {
+  pending: "pending",
+  in_progress: "in_progress",
+  completed: "completed",
+} as const;
+
+export type TaskPriority = (typeof TaskPriority)[keyof typeof TaskPriority];
+
+export const TaskPriority = {
+  low: "low",
+  medium: "medium",
+  high: "high",
+} as const;
+
+export interface Task {
+  id: number;
+  title: string;
+  description?: string | null;
+  status: TaskStatus;
+  priority: TaskPriority;
+  dueDate?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CreateTaskBodyStatus =
+  (typeof CreateTaskBodyStatus)[keyof typeof CreateTaskBodyStatus];
+
+export const CreateTaskBodyStatus = {
+  pending: "pending",
+  in_progress: "in_progress",
+  completed: "completed",
+} as const;
+
+export type CreateTaskBodyPriority =
+  (typeof CreateTaskBodyPriority)[keyof typeof CreateTaskBodyPriority];
+
+export const CreateTaskBodyPriority = {
+  low: "low",
+  medium: "medium",
+  high: "high",
+} as const;
+
+export interface CreateTaskBody {
+  title: string;
+  description?: string | null;
+  status?: CreateTaskBodyStatus;
+  priority?: CreateTaskBodyPriority;
+  dueDate?: string | null;
+}
+
+export type UpdateTaskBodyStatus =
+  (typeof UpdateTaskBodyStatus)[keyof typeof UpdateTaskBodyStatus];
+
+export const UpdateTaskBodyStatus = {
+  pending: "pending",
+  in_progress: "in_progress",
+  completed: "completed",
+} as const;
+
+export type UpdateTaskBodyPriority =
+  (typeof UpdateTaskBodyPriority)[keyof typeof UpdateTaskBodyPriority];
+
+export const UpdateTaskBodyPriority = {
+  low: "low",
+  medium: "medium",
+  high: "high",
+} as const;
+
+export interface UpdateTaskBody {
+  title?: string;
+  description?: string | null;
+  status?: UpdateTaskBodyStatus;
+  priority?: UpdateTaskBodyPriority;
+  dueDate?: string | null;
+}
+
+export interface TasksSummary {
+  total: number;
+  pending: number;
+  in_progress: number;
+  completed: number;
+  high_priority: number;
+  due_today: number;
+}
+
+export type ListTasksParams = {
+  status?: ListTasksStatus;
+  priority?: ListTasksPriority;
+};
+
+export type ListTasksStatus =
+  (typeof ListTasksStatus)[keyof typeof ListTasksStatus];
+
+export const ListTasksStatus = {
+  pending: "pending",
+  in_progress: "in_progress",
+  completed: "completed",
+} as const;
+
+export type ListTasksPriority =
+  (typeof ListTasksPriority)[keyof typeof ListTasksPriority];
+
+export const ListTasksPriority = {
+  low: "low",
+  medium: "medium",
+  high: "high",
+} as const;
+
+export type GetRecentTasksParams = {
+  limit?: number;
+};

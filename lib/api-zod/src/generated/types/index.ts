@@ -6,4 +6,18 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./createTaskBody";
+export * from "./createTaskBodyPriority";
+export * from "./createTaskBodyStatus";
+export * from "./getRecentTasksParams";
 export * from "./healthStatus";
+export * from "./listTasksParams";
+export * from "./listTasksPriority";
+export * from "./listTasksStatus";
+export * from "./task";
+export * from "./taskPriority";
+export * from "./tasksSummary";
+export * from "./taskStatus";
+export * from "./updateTaskBody";
+export * from "./updateTaskBodyPriority";
+export * from "./updateTaskBodyStatus";

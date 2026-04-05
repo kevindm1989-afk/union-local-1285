@@ -14,3 +14,125 @@ import * as zod from "zod";
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
 });
+
+/**
+ * @summary List all tasks
+ */
+export const ListTasksQueryParams = zod.object({
+  status: zod.enum(["pending", "in_progress", "completed"]).optional(),
+  priority: zod.enum(["low", "medium", "high"]).optional(),
+});
+
+export const ListTasksResponseItem = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  description: zod.string().nullish(),
+  status: zod.enum(["pending", "in_progress", "completed"]),
+  priority: zod.enum(["low", "medium", "high"]),
+  dueDate: zod.coerce.date().nullish(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+export const ListTasksResponse = zod.array(ListTasksResponseItem);
+
+/**
+ * @summary Create a new task
+ */
+export const createTaskBodyStatusDefault = `pending`;
+export const createTaskBodyPriorityDefault = `medium`;
+
+export const CreateTaskBody = zod.object({
+  title: zod.string(),
+  description: zod.string().nullish(),
+  status: zod
+    .enum(["pending", "in_progress", "completed"])
+    .default(createTaskBodyStatusDefault),
+  priority: zod
+    .enum(["low", "medium", "high"])
+    .default(createTaskBodyPriorityDefault),
+  dueDate: zod.coerce.date().nullish(),
+});
+
+/**
+ * @summary Get a task by ID
+ */
+export const GetTaskParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetTaskResponse = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  description: zod.string().nullish(),
+  status: zod.enum(["pending", "in_progress", "completed"]),
+  priority: zod.enum(["low", "medium", "high"]),
+  dueDate: zod.coerce.date().nullish(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Update a task
+ */
+export const UpdateTaskParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateTaskBody = zod.object({
+  title: zod.string().optional(),
+  description: zod.string().nullish(),
+  status: zod.enum(["pending", "in_progress", "completed"]).optional(),
+  priority: zod.enum(["low", "medium", "high"]).optional(),
+  dueDate: zod.coerce.date().nullish(),
+});
+
+export const UpdateTaskResponse = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  description: zod.string().nullish(),
+  status: zod.enum(["pending", "in_progress", "completed"]),
+  priority: zod.enum(["low", "medium", "high"]),
+  dueDate: zod.coerce.date().nullish(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Delete a task
+ */
+export const DeleteTaskParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary Get tasks statistics summary
+ */
+export const GetTasksSummaryResponse = zod.object({
+  total: zod.number(),
+  pending: zod.number(),
+  in_progress: zod.number(),
+  completed: zod.number(),
+  high_priority: zod.number(),
+  due_today: zod.number(),
+});
+
+/**
+ * @summary Get recently updated tasks
+ */
+export const getRecentTasksQueryLimitDefault = 5;
+
+export const GetRecentTasksQueryParams = zod.object({
+  limit: zod.coerce.number().default(getRecentTasksQueryLimitDefault),
+});
+
+export const GetRecentTasksResponseItem = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  description: zod.string().nullish(),
+  status: zod.enum(["pending", "in_progress", "completed"]),
+  priority: zod.enum(["low", "medium", "high"]),
+  dueDate: zod.coerce.date().nullish(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+export const GetRecentTasksResponse = zod.array(GetRecentTasksResponseItem);
