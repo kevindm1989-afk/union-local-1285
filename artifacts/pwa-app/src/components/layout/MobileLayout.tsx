@@ -40,7 +40,7 @@ export function MobileLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-[100dvh] max-w-[480px] mx-auto bg-background pb-[76px] relative flex flex-col shadow-2xl ring-1 ring-border">
       {user && (
-        <div className="flex items-center justify-end px-4 py-2 border-b border-border/50 bg-background/95 backdrop-blur-sm">
+        <div className="flex items-center justify-end px-4 py-2 border-b border-border/50 bg-background/95 backdrop-blur-sm relative z-30">
           <div className="relative">
             <button
               onClick={() => setShowUserMenu((v) => !v)}
