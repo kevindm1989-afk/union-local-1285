@@ -1,48 +1,22 @@
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 import { logger } from "./logger";
 
-let connectionSettings: any;
+function createTransport() {
+  const host = process.env.SMTP_HOST;
+  const port = parseInt(process.env.SMTP_PORT ?? "587", 10);
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
 
-async function getCredentials(): Promise<{ apiKey: string; fromEmail: string }> {
-  const fromEmail = process.env.RESEND_FROM_EMAIL ?? "onboarding@resend.dev";
-
-  // In production (Fly.io), use a direct API key env var
-  if (process.env.RESEND_API_KEY) {
-    return { apiKey: process.env.RESEND_API_KEY, fromEmail };
+  if (!host || !user || !pass) {
+    throw new Error("SMTP_HOST, SMTP_USER, and SMTP_PASS must be set to send emails");
   }
 
-  // In Replit dev/deploy, use the connector to get the API key at runtime
-  const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
-  const xReplitToken = process.env.REPL_IDENTITY
-    ? "repl " + process.env.REPL_IDENTITY
-    : process.env.WEB_REPL_RENEWAL
-    ? "depl " + process.env.WEB_REPL_RENEWAL
-    : null;
-
-  if (!hostname || !xReplitToken) {
-    throw new Error("No Resend API key available (set RESEND_API_KEY or use Replit connector)");
-  }
-
-  connectionSettings = await fetch(
-    "https://" + hostname + "/api/v2/connection?include_secrets=true&connector_names=resend",
-    {
-      headers: {
-        Accept: "application/json",
-        "X-Replit-Token": xReplitToken,
-      },
-    }
-  )
-    .then((res) => res.json())
-    .then((data) => data.items?.[0]);
-
-  if (!connectionSettings?.settings?.api_key) {
-    throw new Error("Resend not connected via Replit connector");
-  }
-
-  return {
-    apiKey: connectionSettings.settings.api_key,
-    fromEmail: connectionSettings.settings.from_email ?? fromEmail,
-  };
+  return nodemailer.createTransport({
+    host,
+    port,
+    secure: port === 465,
+    auth: { user, pass },
+  });
 }
 
 export async function sendAccessRequestNotification(opts: {
@@ -57,11 +31,11 @@ export async function sendAccessRequestNotification(opts: {
   }
 
   try {
-    const { apiKey, fromEmail } = await getCredentials();
-    const resend = new Resend(apiKey);
+    const transport = createTransport();
+    const from = process.env.SMTP_FROM ?? process.env.SMTP_USER;
 
-    await resend.emails.send({
-      from: fromEmail,
+    await transport.sendMail({
+      from,
       to: adminEmail,
       subject: `New access request from ${opts.requesterName}`,
       html: `
@@ -79,14 +53,12 @@ export async function sendAccessRequestNotification(opts: {
               <td style="padding:8px 0;color:#888;">Username</td>
               <td style="padding:8px 0;font-weight:600;color:#111;font-family:monospace;">@${opts.requesterUsername}</td>
             </tr>
-            ${
-              opts.reason
-                ? `<tr>
+            ${opts.reason
+              ? `<tr>
               <td style="padding:8px 0;color:#888;vertical-align:top;">Reason</td>
               <td style="padding:8px 0;color:#111;font-style:italic;">${opts.reason}</td>
             </tr>`
-                : ""
-            }
+              : ""}
           </table>
           <div style="margin-top:24px;">
             <a href="https://union-local-1285.fly.dev/admin"
@@ -99,6 +71,17 @@ export async function sendAccessRequestNotification(opts: {
           </p>
         </div>
       `,
+      text: [
+        "New Access Request — Union Local 1285",
+        "",
+        `Name:     ${opts.requesterName}`,
+        `Username: @${opts.requesterUsername}`,
+        opts.reason ? `Reason:   ${opts.reason}` : "",
+        "",
+        "Review at: https://union-local-1285.fly.dev/admin",
+      ]
+        .filter((l) => l !== undefined)
+        .join("\n"),
     });
 
     logger.info({ to: adminEmail, requester: opts.requesterUsername }, "Access request notification sent");
