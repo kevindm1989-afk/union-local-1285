@@ -2,7 +2,7 @@
 
 ## Overview
 
-Mobile PWA for Union Local 1285 stewards to manage member records, track grievances, post bulletins, and access CBA documents. Built as a pnpm monorepo with a React + Vite frontend and Express API server backed by PostgreSQL. Full RBAC system with role-configurable permissions.
+Mobile PWA for Union Local 1285 stewards to manage member records, track grievances, post bulletins, and access CBA documents. Built as a pnpm monorepo with a React + Vite frontend and Express API server backed by PostgreSQL. Full RBAC system with role-configurable permissions. Includes a Claude AI assistant (CBA Q&A) powered by Anthropic via Replit AI Integrations.
 
 ## Stack
 

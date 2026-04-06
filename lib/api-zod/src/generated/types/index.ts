@@ -8,8 +8,13 @@
 
 export * from "./announcement";
 export * from "./announcementCategory";
+export * from "./anthropicConversation";
+export * from "./anthropicConversationWithMessages";
+export * from "./anthropicError";
+export * from "./anthropicMessage";
 export * from "./createAnnouncementBody";
 export * from "./createAnnouncementBodyCategory";
+export * from "./createAnthropicConversationBody";
 export * from "./createDocumentBody";
 export * from "./createGrievanceBody";
 export * from "./createGrievanceBodyStatus";
@@ -29,6 +34,7 @@ export * from "./member";
 export * from "./recentActivity";
 export * from "./requestUploadUrlBody";
 export * from "./requestUploadUrlResponse";
+export * from "./sendAnthropicMessageBody";
 export * from "./updateAnnouncementBody";
 export * from "./updateAnnouncementBodyCategory";
 export * from "./updateDocumentBody";

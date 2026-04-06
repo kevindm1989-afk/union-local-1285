@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Users, FileText, Bell, FolderOpen, Plus, LogOut, ChevronDown, ShieldCheck } from "lucide-react";
+import { LayoutDashboard, Users, FileText, Bell, Bot, Plus, LogOut, ChevronDown, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth, usePermissions } from "@/App";
 
@@ -14,7 +14,7 @@ export function MobileLayout({ children }: { children: React.ReactNode }) {
     if (location.startsWith("/members")) return "members";
     if (location.startsWith("/grievances")) return "grievances";
     if (location.startsWith("/bulletins")) return "bulletins";
-    if (location.startsWith("/documents")) return "documents";
+    if (location.startsWith("/assistant")) return "assistant";
     return "dashboard";
   };
 
@@ -34,7 +34,7 @@ export function MobileLayout({ children }: { children: React.ReactNode }) {
     { id: "members", href: "/members", icon: Users, label: "Members" },
     { id: "grievances", href: "/grievances", icon: FileText, label: "Grievances" },
     { id: "bulletins", href: "/bulletins", icon: Bell, label: "Bulletins" },
-    { id: "documents", href: "/documents", icon: FolderOpen, label: "CBA" },
+    { id: "assistant", href: "/assistant", icon: Bot, label: "AI" },
   ];
 
   return (

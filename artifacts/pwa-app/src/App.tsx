@@ -18,6 +18,7 @@ import BulletinCreate from "@/pages/BulletinCreate";
 import BulletinDetail from "@/pages/BulletinDetail";
 import Documents from "@/pages/Documents";
 import Admin from "@/pages/Admin";
+import CbaAssistant from "@/pages/CbaAssistant";
 
 export interface AuthUser {
   id: number;
@@ -83,6 +84,8 @@ function Router() {
       <Route path="/bulletins/:id" component={BulletinDetail} />
 
       <Route path="/documents" component={Documents} />
+
+      <Route path="/assistant" component={CbaAssistant} />
 
       <Route path="/admin" component={Admin} />
 
