@@ -14,6 +14,12 @@ const PgStore = connectPgSimple(session);
 
 const app: Express = express();
 
+// Trust the first proxy (Fly.io / Replit) so req.secure is correct when
+// running behind HTTPS-terminating reverse proxies. Without this,
+// express-session refuses to set Secure cookies even though the browser
+// is talking HTTPS, causing logins to silently fail in production.
+app.set("trust proxy", 1);
+
 app.use(
   pinoHttp({
     logger,
