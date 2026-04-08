@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { User, FileText, Bell, PenLine, LogOut, ChevronDown } from "lucide-react";
+import { User, FileText, Bell, PenLine, LogOut, ChevronDown, ShieldAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/App";
 
@@ -8,6 +8,7 @@ const navItems = [
   { id: "profile", href: "/portal", icon: User, label: "My Profile" },
   { id: "grievances", href: "/portal/grievances", icon: FileText, label: "Grievances" },
   { id: "bulletins", href: "/portal/bulletins", icon: Bell, label: "Bulletins" },
+  { id: "discipline", href: "/portal/discipline", icon: ShieldAlert, label: "Discipline" },
   { id: "sign-card", href: "/portal/sign-card", icon: PenLine, label: "Union Card" },
 ];
 
@@ -19,6 +20,7 @@ export function MemberPortalLayout({ children }: { children: React.ReactNode }) 
   const getSection = () => {
     if (location.startsWith("/portal/grievances")) return "grievances";
     if (location.startsWith("/portal/bulletins")) return "bulletins";
+    if (location.startsWith("/portal/discipline")) return "discipline";
     if (location.startsWith("/portal/sign-card")) return "sign-card";
     return "profile";
   };

@@ -32,6 +32,7 @@ import Polls from "@/pages/Polls";
 import MemberPortalProfile from "@/pages/portal/MemberPortalProfile";
 import MemberPortalGrievances from "@/pages/portal/MemberPortalGrievances";
 import MemberPortalBulletins from "@/pages/portal/MemberPortalBulletins";
+import MemberPortalDiscipline from "@/pages/portal/MemberPortalDiscipline";
 import MemberPortalSignCard from "@/pages/portal/MemberPortalSignCard";
 
 export interface AuthUser {
@@ -123,6 +124,7 @@ function MemberPortalRouter() {
       <Route path="/portal" component={MemberPortalProfile} />
       <Route path="/portal/grievances" component={MemberPortalGrievances} />
       <Route path="/portal/bulletins" component={MemberPortalBulletins} />
+      <Route path="/portal/discipline" component={MemberPortalDiscipline} />
       <Route path="/portal/sign-card" component={MemberPortalSignCard} />
       <Route path="/" component={MemberPortalProfile} />
       <Route component={MemberPortalProfile} />

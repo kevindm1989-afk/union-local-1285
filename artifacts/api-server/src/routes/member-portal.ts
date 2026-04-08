@@ -1,6 +1,6 @@
 import { Router, type Request, type Response } from "express";
-import { db, membersTable, grievancesTable, announcementsTable, usersTable } from "@workspace/db";
-import { eq, desc } from "drizzle-orm";
+import { db, membersTable, grievancesTable, announcementsTable, usersTable, disciplineRecordsTable } from "@workspace/db";
+import { eq, desc, asc } from "drizzle-orm";
 
 const router = Router();
 
@@ -163,6 +163,28 @@ router.get("/bulletins", requireMemberRole, async (_req: Request, res: Response)
     .orderBy(desc(announcementsTable.publishedAt))
     .limit(50);
   res.json(bulletins);
+});
+
+/**
+ * GET /member-portal/discipline — own discipline records (read-only)
+ */
+router.get("/discipline", requireMemberRole, async (req: Request, res: Response) => {
+  const memberId = req.session.linkedMemberId!;
+  const records = await db
+    .select({
+      id: disciplineRecordsTable.id,
+      disciplineType: disciplineRecordsTable.disciplineType,
+      incidentDate: disciplineRecordsTable.incidentDate,
+      issuedDate: disciplineRecordsTable.issuedDate,
+      description: disciplineRecordsTable.description,
+      responseFiled: disciplineRecordsTable.responseFiled,
+      grievanceId: disciplineRecordsTable.grievanceId,
+      createdAt: disciplineRecordsTable.createdAt,
+    })
+    .from(disciplineRecordsTable)
+    .where(eq(disciplineRecordsTable.memberId, memberId))
+    .orderBy(asc(disciplineRecordsTable.incidentDate));
+  res.json(records.map((r) => ({ ...r, createdAt: r.createdAt.toISOString() })));
 });
 
 /**
