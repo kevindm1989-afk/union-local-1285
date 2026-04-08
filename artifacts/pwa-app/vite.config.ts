@@ -39,8 +39,8 @@ export default defineConfig({
       base: basePath,
       manifest: {
         name: "Union Steward App",
-        short_name: "Union 1285",
-        description: "Union Local 1285 Steward Management Portal",
+        short_name: "Union Local",
+        description: "Union Steward Management Portal",
         theme_color: "#1a3a5c",
         background_color: "#ffffff",
         display: "standalone",

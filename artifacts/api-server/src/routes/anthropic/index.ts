@@ -8,7 +8,7 @@ import cbaText from "../../data/cba.txt";
 
 const router: IRouter = Router();
 
-const SYSTEM_PROMPT = `You are a knowledgeable union steward assistant for UNIFOR Local 1285 at Saputo Dairy Products Canada G.P. (Halton Hills Milk Pasteurizing Plant).
+const SYSTEM_PROMPT = `You are a knowledgeable union steward assistant for your union local.
 
 Your role is to help stewards and members understand their rights and entitlements under the Collective Agreement. When answering questions:
 - Quote the specific Article and clause number whenever possible (e.g. "Article 9.01 states...")

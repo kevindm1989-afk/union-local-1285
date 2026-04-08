@@ -48,7 +48,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
             <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center mx-auto shadow-lg">
               <ShieldCheck className="w-9 h-9 text-primary-foreground" />
             </div>
-            <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Local 1285</h1>
+            <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Union Local</h1>
             <p className="text-sm text-muted-foreground">Steward Portal</p>
           </div>
 
@@ -113,7 +113,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
 
       <div className="pb-8 text-center">
         <p className="text-xs text-muted-foreground">
-          Union Local 1285 — Steward Access Only
+          Union Local — Steward Access Only
         </p>
       </div>
     </div>

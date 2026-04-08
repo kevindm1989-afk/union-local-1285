@@ -110,7 +110,7 @@ export async function sendAccessRequestNotification(opts: {
       <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;">
         <h2 style="margin:0 0 8px;font-size:20px;color:#111;">New Access Request</h2>
         <p style="margin:0 0 20px;color:#555;font-size:14px;">
-          Someone has requested access to the Union Local 1285 Steward Portal.
+          Someone has requested access to the Union Steward Portal.
         </p>
         <table style="width:100%;border-collapse:collapse;font-size:14px;">
           <tr>
@@ -136,11 +136,11 @@ export async function sendAccessRequestNotification(opts: {
             Review in Admin Panel
           </a>
         </div>
-        <p style="margin-top:24px;font-size:12px;color:#aaa;">Union Local 1285 — Steward Portal</p>
+        <p style="margin-top:24px;font-size:12px;color:#aaa;">Union Local — Steward Portal</p>
       </div>
     `,
     text: [
-      "New Access Request — Union Local 1285",
+      "New Access Request — Union Local",
       "",
       `Name:     ${opts.requesterName}`,
       `Username: @${opts.requesterUsername}`,
@@ -180,10 +180,10 @@ export async function sendAccessRequestApprovedEmail(opts: {
 
   await send({
     to: opts.recipientEmail,
-    subject: "Your Union Local 1285 membership account has been approved",
+    subject: "Your union membership account has been approved",
     html: `
       <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;">
-        <h2 style="margin:0 0 8px;font-size:20px;color:#111;">Welcome to Local 1285!</h2>
+        <h2 style="margin:0 0 8px;font-size:20px;color:#111;">Welcome to Union Local!</h2>
         <p style="margin:0 0 16px;color:#555;font-size:14px;">
           Hi ${opts.recipientName}, your access request has been approved. Here are your login credentials:
         </p>
@@ -206,11 +206,11 @@ export async function sendAccessRequestApprovedEmail(opts: {
         <div style="margin-top:24px;">
           <a href="${portalUrl}" style="display:inline-block;background:#b91c1c;color:#fff;text-decoration:none;padding:10px 20px;border-radius:8px;font-weight:700;font-size:14px;">Sign In Now</a>
         </div>
-        <p style="margin-top:24px;font-size:12px;color:#aaa;">Union Local 1285 — Steward Portal</p>
+        <p style="margin-top:24px;font-size:12px;color:#aaa;">Union Local — Steward Portal</p>
       </div>
     `,
     text: [
-      `Welcome to Union Local 1285, ${opts.recipientName}!`,
+      `Welcome to Union Local, ${opts.recipientName}!`,
       "",
       "Your access request has been approved. Here are your login credentials:",
       `Portal: ${portalUrl}`,
@@ -233,7 +233,7 @@ export async function sendAccessRequestRejectedEmail(opts: {
 }): Promise<void> {
   await send({
     to: opts.recipientEmail,
-    subject: "Update on your Union Local 1285 access request",
+    subject: "Update on your union access request",
     html: `
       <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;">
         <h2 style="margin:0 0 8px;font-size:20px;color:#111;">Access Request Update</h2>
@@ -245,7 +245,7 @@ export async function sendAccessRequestRejectedEmail(opts: {
           <p style="margin:4px 0 0;font-size:14px;color:#111;">${opts.rejectionReason}</p>
         </div>
         <p style="color:#555;font-size:13px;">If you believe this is an error, please contact your union steward directly.</p>
-        <p style="margin-top:24px;font-size:12px;color:#aaa;">Union Local 1285 — Steward Portal</p>
+        <p style="margin-top:24px;font-size:12px;color:#aaa;">Union Local — Steward Portal</p>
       </div>
     `,
     text: [
@@ -298,7 +298,7 @@ export async function sendNewMemberRequestNotification(opts: {
         <div style="margin-top:24px;">
           <a href="${portalUrl}/admin" style="display:inline-block;background:#b91c1c;color:#fff;text-decoration:none;padding:10px 20px;border-radius:8px;font-weight:700;font-size:14px;">Review in Admin Panel</a>
         </div>
-        <p style="margin-top:24px;font-size:12px;color:#aaa;">Union Local 1285 — Steward Portal</p>
+        <p style="margin-top:24px;font-size:12px;color:#aaa;">Union Local — Steward Portal</p>
       </div>
     `,
     text: `New access request from ${name} (${opts.email}). Requested role: ${opts.requestedRole ? roleLabel(opts.requestedRole) : "Member"}. Review at: ${portalUrl}/admin`,
@@ -313,12 +313,12 @@ export async function sendMemberDeactivatedEmail(opts: {
 }): Promise<void> {
   await send({
     to: opts.recipientEmail,
-    subject: "Your Union Local 1285 membership account has been deactivated",
+    subject: "Your union membership account has been deactivated",
     html: `
       <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;">
         <h2 style="margin:0 0 8px;font-size:20px;color:#111;">Account Deactivated</h2>
         <p style="color:#555;font-size:14px;">Hi ${opts.recipientName}, your union membership account has been deactivated. Contact your steward for more information.</p>
-        <p style="margin-top:24px;font-size:12px;color:#aaa;">Union Local 1285 — Steward Portal</p>
+        <p style="margin-top:24px;font-size:12px;color:#aaa;">Union Local — Steward Portal</p>
       </div>
     `,
     text: `Hi ${opts.recipientName}, your union membership account has been deactivated. Contact your steward for more information.`,
@@ -380,7 +380,7 @@ export async function sendGrievanceFiledNotification(opts: {
             View Grievance
           </a>
         </div>
-        <p style="margin-top:24px;font-size:12px;color:#aaa;">Union Local 1285 — Steward Portal</p>
+        <p style="margin-top:24px;font-size:12px;color:#aaa;">Union Local — Steward Portal</p>
       </div>
     `,
     text: [
@@ -452,7 +452,7 @@ export async function sendGrievanceStatusNotification(opts: {
             View Grievance
           </a>
         </div>
-        <p style="margin-top:24px;font-size:12px;color:#aaa;">Union Local 1285 — Steward Portal</p>
+        <p style="margin-top:24px;font-size:12px;color:#aaa;">Union Local — Steward Portal</p>
       </div>
     `,
     text: [

@@ -123,7 +123,7 @@ export default function Meetings() {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-xl font-black text-foreground tracking-tight">Meetings</h1>
-            <p className="text-xs text-muted-foreground mt-0.5">Union Local 1285</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Union Local</p>
           </div>
           {can("meetings.manage") && (
             <Link href="/meetings/new">

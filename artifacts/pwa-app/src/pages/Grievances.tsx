@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 
 const statuses = [
   { id: "all", label: "All" },
+  { id: "member_requested", label: "Requested" },
   { id: "open", label: "Open" },
   { id: "pending_response", label: "Awaiting Response" },
   { id: "pending_hearing", label: "Awaiting Hearing" },
@@ -41,6 +42,7 @@ export default function Grievances() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case 'member_requested': return 'bg-violet-100 text-violet-800 border-violet-200 dark:bg-violet-900/30 dark:text-violet-400 dark:border-violet-800';
       case 'open': return 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800';
       case 'pending_response': return 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800';
       case 'pending_hearing': return 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800';

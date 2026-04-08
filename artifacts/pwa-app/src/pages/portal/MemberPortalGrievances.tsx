@@ -27,6 +27,7 @@ type PortalGrievance = {
 };
 
 const statusColors: Record<string, string> = {
+  member_requested: "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300",
   open: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
   pending_response: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
   pending_hearing: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300",
@@ -35,7 +36,8 @@ const statusColors: Record<string, string> = {
 };
 
 const statusLabel: Record<string, string> = {
-  open: "Open",
+  member_requested: "Requested — Under Review",
+  open: "Filed",
   pending_response: "Pending Response",
   pending_hearing: "Pending Hearing",
   resolved: "Resolved",
@@ -74,9 +76,9 @@ export default function MemberPortalGrievances() {
       setDescription("");
       setDateOfIncident("");
       setAccommodationRequest(false);
-      toast({ title: "Grievance submitted", description: "Your steward has been notified." });
+      toast({ title: "Request submitted", description: "Your steward or chair has been notified and will review your request." });
     },
-    onError: () => toast({ title: "Failed to submit", variant: "destructive" }),
+    onError: () => toast({ title: "Failed to submit request", variant: "destructive" }),
   });
 
   const handleSubmit = () => {
@@ -96,7 +98,7 @@ export default function MemberPortalGrievances() {
             <p className="text-xs text-muted-foreground">{grievances.length} total</p>
           </div>
           <Button size="sm" onClick={() => setSheetOpen(true)} className="gap-1.5 text-xs h-8">
-            <Plus className="w-3.5 h-3.5" /> File New
+            <Plus className="w-3.5 h-3.5" /> Request Filing
           </Button>
         </div>
 
@@ -110,7 +112,7 @@ export default function MemberPortalGrievances() {
               <FileText className="w-10 h-10 text-muted-foreground/40" />
               <div>
                 <p className="text-sm font-medium text-muted-foreground">No grievances yet</p>
-                <p className="text-xs text-muted-foreground/70 mt-0.5">Tap "File New" if you have a workplace issue</p>
+                <p className="text-xs text-muted-foreground/70 mt-0.5">Tap "Request Filing" to ask your steward or chair to file a grievance</p>
               </div>
             </CardContent>
           </Card>
@@ -148,8 +150,8 @@ export default function MemberPortalGrievances() {
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetContent side="bottom" className="rounded-t-2xl max-h-[85vh] overflow-y-auto">
           <SheetHeader className="pb-4">
-            <SheetTitle>File a Grievance</SheetTitle>
-            <p className="text-xs text-muted-foreground">Your steward will review and follow up.</p>
+            <SheetTitle>Request Grievance Filing</SheetTitle>
+            <p className="text-xs text-muted-foreground">Your steward or chair will review your request and file the grievance on your behalf.</p>
           </SheetHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
@@ -186,7 +188,7 @@ export default function MemberPortalGrievances() {
             </div>
             <Button onClick={handleSubmit} disabled={submitMutation.isPending} className="w-full gap-2">
               {submitMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
-              Submit Grievance
+              Send Request to Steward
             </Button>
           </div>
         </SheetContent>

@@ -13,6 +13,7 @@ import { Users, FileText, AlertTriangle, Clock, ChevronRight, Bell, CalendarCloc
 import { cn } from "@/lib/utils";
 
 const statusColors: Record<string, string> = {
+  member_requested: "bg-violet-100 text-violet-800 border-violet-200 dark:bg-violet-900/30 dark:text-violet-400",
   open: "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400",
   pending_response: "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400",
   pending_hearing: "bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400",
@@ -67,7 +68,7 @@ export default function Dashboard() {
             {format(new Date(), "EEEE, MMMM d")}
           </p>
           <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
-            Union Local 1285
+            Union Local
           </h1>
           <p className="text-sm text-muted-foreground">Steward Dashboard</p>
         </header>

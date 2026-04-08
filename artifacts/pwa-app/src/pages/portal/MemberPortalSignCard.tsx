@@ -113,7 +113,7 @@ export default function MemberPortalSignCard() {
                 </p>
               </div>
               <div className="w-full border border-green-200 dark:border-green-800/50 rounded-xl p-4 bg-background">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Union Local 1285</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Union Local</p>
                 <p className="text-base font-bold text-foreground mt-1">{profile.name}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">Member in Good Standing</p>
               </div>
@@ -145,7 +145,7 @@ export default function MemberPortalSignCard() {
 
         <Card className="border-border/50">
           <CardHeader className="pb-2 pt-4 px-4">
-            <CardTitle className="text-sm">Union Local 1285 — Membership Card</CardTitle>
+            <CardTitle className="text-sm">Union Membership Card</CardTitle>
             <p className="text-xs text-muted-foreground">
               By signing, you confirm your membership and agreement to abide by the union's constitution and bylaws.
             </p>

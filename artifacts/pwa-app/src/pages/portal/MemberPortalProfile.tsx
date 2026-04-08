@@ -90,7 +90,7 @@ export default function MemberPortalProfile() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-foreground">My Profile</h1>
-            <p className="text-xs text-muted-foreground">Union Local 1285</p>
+            <p className="text-xs text-muted-foreground">Union Local</p>
           </div>
           {!editing && (
             <Button size="sm" variant="outline" onClick={startEdit} className="gap-1.5 text-xs h-8">

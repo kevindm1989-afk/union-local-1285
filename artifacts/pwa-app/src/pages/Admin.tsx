@@ -802,7 +802,7 @@ export default function Admin() {
                       <div className="space-y-1.5">
                         <label className="text-xs text-muted-foreground">Agreement Name</label>
                         <Input
-                          placeholder="e.g. CUPE Local 1285 CBA 2023–2026"
+                          placeholder="e.g. Union Local CBA 2023–2026"
                           value={settingsForm["cba_name"] ?? ""}
                           onChange={(e) => settingField("cba_name", e.target.value)}
                         />

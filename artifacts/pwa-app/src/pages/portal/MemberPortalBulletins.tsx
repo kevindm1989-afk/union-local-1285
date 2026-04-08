@@ -48,7 +48,7 @@ export default function MemberPortalBulletins() {
       <div className="p-4 space-y-4 animate-in fade-in-0 slide-in-from-bottom-4 duration-300">
         <div>
           <h1 className="text-xl font-bold text-foreground">Bulletins</h1>
-          <p className="text-xs text-muted-foreground">Union Local 1285 announcements</p>
+          <p className="text-xs text-muted-foreground">Union announcements</p>
         </div>
 
         {isLoading ? (

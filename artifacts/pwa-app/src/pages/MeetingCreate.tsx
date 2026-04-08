@@ -79,7 +79,7 @@ export default function MeetingCreate() {
           </Link>
           <div>
             <h1 className="text-lg font-black text-foreground">Schedule Meeting</h1>
-            <p className="text-xs text-muted-foreground">Union Local 1285</p>
+            <p className="text-xs text-muted-foreground">Union Local</p>
           </div>
         </div>
 

@@ -1,7 +1,7 @@
 {
-  "name": "Union Local 1285",
-  "short_name": "Local 1285",
-  "description": "Steward App for Union Local 1285",
+  "name": "Union Steward App",
+  "short_name": "Union Local",
+  "description": "Union Steward Management Portal",
   "icons": [
     {
       "src": "/favicon.svg",

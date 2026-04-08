@@ -121,7 +121,7 @@ router.post("/grievances", requireMemberRole, async (req: Request, res: Response
 
   // Get member name for title
   const [member] = await db.select({ name: membersTable.name }).from(membersTable).where(eq(membersTable.id, memberId));
-  const title = `Grievance filed by ${member?.name ?? "Member"} — ${dateOfIncident}`;
+  const title = `Grievance request from ${member?.name ?? "Member"} — ${dateOfIncident}`;
 
   const [grievance] = await db
     .insert(grievancesTable)
@@ -131,7 +131,7 @@ router.post("/grievances", requireMemberRole, async (req: Request, res: Response
       title,
       description: String(description),
       step: 1,
-      status: "open",
+      status: "member_requested",
       filedDate: dateOfIncident,
       accommodationRequest: accommodationRequest === true,
     })
