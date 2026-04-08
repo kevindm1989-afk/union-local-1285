@@ -34,6 +34,7 @@ import MemberPortalGrievances from "@/pages/portal/MemberPortalGrievances";
 import MemberPortalBulletins from "@/pages/portal/MemberPortalBulletins";
 import MemberPortalDiscipline from "@/pages/portal/MemberPortalDiscipline";
 import MemberPortalSignCard from "@/pages/portal/MemberPortalSignCard";
+import MemberPortalCbaAssistant from "@/pages/portal/MemberPortalCbaAssistant";
 
 export interface AuthUser {
   id: number;
@@ -125,6 +126,7 @@ function MemberPortalRouter() {
       <Route path="/portal/grievances" component={MemberPortalGrievances} />
       <Route path="/portal/bulletins" component={MemberPortalBulletins} />
       <Route path="/portal/discipline" component={MemberPortalDiscipline} />
+      <Route path="/portal/assistant" component={MemberPortalCbaAssistant} />
       <Route path="/portal/sign-card" component={MemberPortalSignCard} />
       <Route path="/" component={MemberPortalProfile} />
       <Route component={MemberPortalProfile} />

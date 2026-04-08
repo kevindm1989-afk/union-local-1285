@@ -1,15 +1,16 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { User, FileText, Bell, PenLine, LogOut, ChevronDown, ShieldAlert } from "lucide-react";
+import { User, FileText, Bell, PenLine, LogOut, ChevronDown, ShieldAlert, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/App";
 
 const navItems = [
-  { id: "profile", href: "/portal", icon: User, label: "My Profile" },
+  { id: "profile", href: "/portal", icon: User, label: "Profile" },
   { id: "grievances", href: "/portal/grievances", icon: FileText, label: "Grievances" },
   { id: "bulletins", href: "/portal/bulletins", icon: Bell, label: "Bulletins" },
   { id: "discipline", href: "/portal/discipline", icon: ShieldAlert, label: "Discipline" },
-  { id: "sign-card", href: "/portal/sign-card", icon: PenLine, label: "Union Card" },
+  { id: "assistant", href: "/portal/assistant", icon: Sparkles, label: "Assistant" },
+  { id: "sign-card", href: "/portal/sign-card", icon: PenLine, label: "Card" },
 ];
 
 export function MemberPortalLayout({ children }: { children: React.ReactNode }) {
@@ -21,6 +22,7 @@ export function MemberPortalLayout({ children }: { children: React.ReactNode }) 
     if (location.startsWith("/portal/grievances")) return "grievances";
     if (location.startsWith("/portal/bulletins")) return "bulletins";
     if (location.startsWith("/portal/discipline")) return "discipline";
+    if (location.startsWith("/portal/assistant")) return "assistant";
     if (location.startsWith("/portal/sign-card")) return "sign-card";
     return "profile";
   };

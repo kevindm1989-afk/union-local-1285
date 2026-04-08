@@ -1,6 +1,24 @@
 import { Router, type Request, type Response } from "express";
 import { db, membersTable, grievancesTable, announcementsTable, usersTable, disciplineRecordsTable } from "@workspace/db";
 import { eq, desc, asc } from "drizzle-orm";
+import { anthropic } from "@workspace/integrations-anthropic-ai";
+// @ts-ignore — .txt imported via esbuild text loader
+import cbaText from "../data/cba.txt";
+
+const MEMBER_AI_SYSTEM_PROMPT = `You are a knowledgeable union assistant for your union local. You help members understand their rights and entitlements under the Collective Agreement.
+
+When answering questions:
+- Quote the specific Article and clause number whenever possible (e.g. "Article 9.01 states...")
+- Be accurate and grounded in the contract text — do not make up provisions
+- If a question isn't covered by the CBA, say so clearly
+- Keep answers practical and easy to understand for a regular member (not a lawyer)
+- For serious issues, advise the member to contact their union steward
+
+Here is the full Collective Agreement text:
+
+---
+${cbaText}
+---`;
 
 const router = Router();
 
@@ -218,6 +236,57 @@ router.post("/sign-card", requireMemberRole, async (req: Request, res: Response)
     });
 
   res.json({ ok: true, signedAt: updated.signedAt });
+});
+
+/**
+ * POST /member-portal/ai/chat — stateless streaming CBA assistant for members
+ * History is passed in-request and not persisted to the database.
+ */
+router.post("/ai/chat", requireMemberRole, async (req: Request, res: Response) => {
+  const { messages } = req.body ?? {};
+  if (!Array.isArray(messages) || messages.length === 0) {
+    res.status(400).json({ error: "messages array is required" });
+    return;
+  }
+
+  const chatMessages = messages
+    .filter((m: any) => m.role && m.content)
+    .map((m: any) => ({ role: m.role as "user" | "assistant", content: String(m.content) }));
+
+  if (chatMessages.length === 0) {
+    res.status(400).json({ error: "No valid messages" });
+    return;
+  }
+
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+
+  try {
+    const stream = anthropic.messages.stream({
+      model: "claude-sonnet-4-6",
+      max_tokens: 4096,
+      system: MEMBER_AI_SYSTEM_PROMPT,
+      messages: chatMessages,
+    });
+
+    for await (const event of stream) {
+      if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+        res.write(`data: ${JSON.stringify({ content: event.delta.text })}\n\n`);
+      }
+    }
+
+    res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+    res.end();
+  } catch (err) {
+    req.log.error({ err }, "Member portal AI chat failed");
+    if (!res.headersSent) {
+      res.status(500).json({ error: "AI service unavailable" });
+    } else {
+      res.write(`data: ${JSON.stringify({ error: "Stream error" })}\n\n`);
+      res.end();
+    }
+  }
 });
 
 export default router;
