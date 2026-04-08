@@ -398,6 +398,36 @@ router.get("/auth/roles/permissions", async (req: Request, res: Response) => {
 });
 
 /**
+ * DELETE /auth/users/:id — admin/chair only: permanently remove a user account
+ */
+router.delete("/auth/users/:id", async (req: Request, res: Response) => {
+  if (!["admin", "chair"].includes(req.session.role)) {
+    res.status(403).json({ error: "Admin access required" });
+    return;
+  }
+  const id = Number(req.params.id);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid user ID" });
+    return;
+  }
+  if (id === req.session.userId) {
+    res.status(400).json({ error: "Cannot delete your own account" });
+    return;
+  }
+  const [target] = await db.select({ id: usersTable.id, role: usersTable.role }).from(usersTable).where(eq(usersTable.id, id));
+  if (!target) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+  if (target.role === "admin") {
+    res.status(400).json({ error: "Cannot delete an admin account" });
+    return;
+  }
+  await db.delete(usersTable).where(eq(usersTable.id, id));
+  res.json({ ok: true });
+});
+
+/**
  * PATCH /auth/roles/permissions — chair/admin only: update a single permission for a role
  */
 router.patch("/auth/roles/permissions", async (req: Request, res: Response) => {
@@ -410,8 +440,8 @@ router.patch("/auth/roles/permissions", async (req: Request, res: Response) => {
     res.status(400).json({ error: "role, permission, and granted (boolean) are required" });
     return;
   }
-  if (!["chair", "steward"].includes(role)) {
-    res.status(400).json({ error: "Can only modify chair or steward permissions" });
+  if (!["chair", "steward", "member"].includes(role)) {
+    res.status(400).json({ error: "Can only modify chair, steward, or member permissions" });
     return;
   }
   if (!(ALL_PERMISSIONS as readonly string[]).includes(permission)) {

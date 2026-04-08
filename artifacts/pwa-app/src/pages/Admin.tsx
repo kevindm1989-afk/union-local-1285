@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import {
   ChevronLeft, Users, ClipboardList, CheckCircle, XCircle,
-  Plus, ShieldCheck, ShieldOff, RefreshCw, Loader2, Eye, EyeOff, Copy, Settings, Mail, History, Bell,
+  Plus, ShieldCheck, ShieldOff, RefreshCw, Loader2, Eye, EyeOff, Copy, Settings, Mail, History, Bell, Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -211,6 +211,19 @@ export default function Admin() {
     onError: (e: Error) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
+  const [deleteTarget, setDeleteTarget] = useState<AppUser | null>(null);
+
+  const deleteUser = useMutation({
+    mutationFn: (id: number) =>
+      fetchJson(`/api/auth/users/${id}`, { method: "DELETE" }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/auth/users"] });
+      setDeleteTarget(null);
+      toast({ title: "User removed", description: "The account has been permanently deleted." });
+    },
+    onError: (e: Error) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
   const handleCreate = () => {
     if (!newName.trim() || !newUsername.trim() || !newPassword.trim()) return;
     const body: Record<string, unknown> = { displayName: newName, username: newUsername, password: newPassword, role: newRole };
@@ -251,7 +264,7 @@ export default function Admin() {
     "documents.upload":   { label: "Upload Documents",    desc: "Upload, edit, and delete CBA documents" },
   };
 
-  const ROLE_LABELS: Record<string, string> = { chair: "Chair", steward: "Steward" };
+  const ROLE_LABELS: Record<string, string> = { chair: "Chair", steward: "Steward", member: "Member" };
 
   // ── Settings ─────────────────────────────────────────────────────────────────
   type SettingsMap = Record<string, { value: string; description: string | null }>;
@@ -677,6 +690,17 @@ export default function Admin() {
                           <ShieldCheck className="w-3.5 h-3.5" />
                         )}
                       </Button>
+                      {u.role !== "admin" && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                          title="Remove user"
+                          onClick={() => setDeleteTarget(u)}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -697,7 +721,7 @@ export default function Admin() {
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
               </div>
             ) : rolesData ? (
-              (["chair", "steward"] as const).map((roleKey) => (
+              (["chair", "steward", "member"] as const).map((roleKey) => (
                 <div key={roleKey} className="bg-card border border-border rounded-xl overflow-hidden">
                   <div className="px-4 py-3 border-b border-border bg-muted/30">
                     <p className="font-extrabold text-sm tracking-tight">{ROLE_LABELS[roleKey]}</p>
@@ -1054,6 +1078,28 @@ export default function Admin() {
               disabled={denyMutation.isPending || !rejectReason.trim()}
             >
               {denyMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Reject Request"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete User Confirmation */}
+      <AlertDialog open={deleteTarget !== null} onOpenChange={(o) => { if (!o) setDeleteTarget(null); }}>
+        <AlertDialogContent className="max-w-[340px] rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove User?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete <strong>{deleteTarget?.displayName ?? deleteTarget?.username}</strong>'s account. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col gap-2">
+            <AlertDialogCancel className="w-full rounded-xl">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="w-full rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deleteTarget && deleteUser.mutate(deleteTarget.id)}
+              disabled={deleteUser.isPending}
+            >
+              {deleteUser.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Remove Account"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
