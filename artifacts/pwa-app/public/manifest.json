@@ -10,9 +10,10 @@
       "purpose": "any"
     }
   ],
-  "theme_color": "#b91c1c",
+  "theme_color": "#1a3a5c",
   "background_color": "#ffffff",
   "display": "standalone",
   "start_url": "/",
+  "scope": "/",
   "orientation": "portrait"
 }

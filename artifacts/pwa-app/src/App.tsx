@@ -20,6 +20,9 @@ import BulletinDetail from "@/pages/BulletinDetail";
 import Documents from "@/pages/Documents";
 import Admin from "@/pages/Admin";
 import CbaAssistant from "@/pages/CbaAssistant";
+import Meetings from "@/pages/Meetings";
+import MeetingCreate from "@/pages/MeetingCreate";
+import MeetingDetail from "@/pages/MeetingDetail";
 
 import MemberPortalProfile from "@/pages/portal/MemberPortalProfile";
 import MemberPortalGrievances from "@/pages/portal/MemberPortalGrievances";
@@ -91,6 +94,10 @@ function StewardRouter() {
       <Route path="/bulletins/:id" component={BulletinDetail} />
 
       <Route path="/documents" component={Documents} />
+
+      <Route path="/meetings" component={Meetings} />
+      <Route path="/meetings/new" component={MeetingCreate} />
+      <Route path="/meetings/:id" component={MeetingDetail} />
 
       <Route path="/assistant" component={CbaAssistant} />
 

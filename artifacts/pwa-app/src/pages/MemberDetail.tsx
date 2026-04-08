@@ -104,6 +104,9 @@ export default function MemberDetail() {
   const [duesLastPaid, setDuesLastPaid] = useState("");
   const [shift, setShift] = useState("");
   const [classificationDate, setClassificationDate] = useState("");
+  const [smsEnabled, setSmsEnabled] = useState(false);
+  const [emailEnabled, setEmailEnabled] = useState(true);
+  const [pushEnabled, setPushEnabled] = useState(true);
 
   // Files state
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -164,6 +167,9 @@ export default function MemberDetail() {
       setDuesLastPaid(member.duesLastPaid ? new Date(member.duesLastPaid).toISOString().split("T")[0] : "");
       setShift(member.shift ?? "");
       setClassificationDate(member.classificationDate ? new Date(member.classificationDate).toISOString().split("T")[0] : "");
+      setSmsEnabled((member as any).smsEnabled ?? false);
+      setEmailEnabled((member as any).emailEnabled ?? true);
+      setPushEnabled((member as any).pushEnabled ?? true);
     }
   }, [member, editOpen]);
 
@@ -192,7 +198,10 @@ export default function MemberDetail() {
           duesLastPaid: duesLastPaid || null,
           shift: shift || null,
           classificationDate: classificationDate || null,
-        },
+          smsEnabled,
+          emailEnabled,
+          pushEnabled,
+        } as any,
       },
       {
         onSuccess: () => {
@@ -766,6 +775,30 @@ export default function MemberDetail() {
                 placeholder="Any relevant notes..."
                 className="min-h-[80px] rounded-xl bg-card resize-none"
               />
+            </div>
+
+            {/* Notification Preferences */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                Notification Preferences
+              </label>
+              <div className="bg-card border border-border rounded-xl divide-y divide-border">
+                {[
+                  { key: "email", label: "Email Notifications", value: emailEnabled, set: setEmailEnabled },
+                  { key: "sms", label: "SMS Notifications", value: smsEnabled, set: setSmsEnabled },
+                  { key: "push", label: "Push Notifications", value: pushEnabled, set: setPushEnabled },
+                ].map(({ key, label, value, set }) => (
+                  <label key={key} className="flex items-center justify-between px-4 py-3 cursor-pointer">
+                    <span className="text-sm text-foreground">{label}</span>
+                    <div
+                      onClick={() => set(!value)}
+                      className={`relative w-10 h-6 rounded-full transition-colors ${value ? "bg-primary" : "bg-muted-foreground/30"}`}
+                    >
+                      <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${value ? "translate-x-5" : "translate-x-1"}`} />
+                    </div>
+                  </label>
+                ))}
+              </div>
             </div>
 
             <div className="flex gap-3 pt-2">

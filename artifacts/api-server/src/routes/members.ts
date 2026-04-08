@@ -158,6 +158,9 @@ router.patch("/:id", requirePermission("members.edit"), async (req, res) => {
   if (body.duesLastPaid !== undefined) updates.duesLastPaid = body.duesLastPaid || null;
   if (body.shift !== undefined) updates.shift = body.shift || null;
   if (body.classificationDate !== undefined) updates.classificationDate = body.classificationDate || null;
+  if (body.smsEnabled !== undefined) updates.smsEnabled = Boolean(body.smsEnabled);
+  if (body.emailEnabled !== undefined) updates.emailEnabled = Boolean(body.emailEnabled);
+  if (body.pushEnabled !== undefined) updates.pushEnabled = Boolean(body.pushEnabled);
 
   const [existing] = await db.select().from(membersTable).where(eq(membersTable.id, paramParsed.data.id));
 
@@ -210,6 +213,9 @@ function formatMember(m: typeof membersTable.$inferSelect) {
     duesLastPaid: m.duesLastPaid ?? null,
     shift: m.shift ?? null,
     classificationDate: m.classificationDate ?? null,
+    smsEnabled: m.smsEnabled ?? false,
+    emailEnabled: m.emailEnabled ?? true,
+    pushEnabled: m.pushEnabled ?? true,
     createdAt: m.createdAt.toISOString(),
     updatedAt: m.updatedAt.toISOString(),
   };

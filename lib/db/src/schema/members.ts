@@ -23,6 +23,9 @@ export const membersTable = pgTable("members", {
   engagementLevel: varchar("engagement_level", { length: 20 }).default("unknown"),
   shopFloorLeader: boolean("shop_floor_leader").notNull().default(false),
   organizingNotes: text("organizing_notes"),
+  smsEnabled: boolean("sms_enabled").notNull().default(false),
+  emailEnabled: boolean("email_enabled").notNull().default(true),
+  pushEnabled: boolean("push_enabled").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

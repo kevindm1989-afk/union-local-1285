@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import {
   ChevronLeft, Users, ClipboardList, CheckCircle, XCircle,
-  Plus, ShieldCheck, ShieldOff, RefreshCw, Loader2, Eye, EyeOff, Copy, Settings, Mail, History,
+  Plus, ShieldCheck, ShieldOff, RefreshCw, Loader2, Eye, EyeOff, Copy, Settings, Mail, History, Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -204,6 +204,24 @@ export default function Admin() {
 
   const [settingsForm, setSettingsForm] = useState<Record<string, string>>({});
   const [settingsDirty, setSettingsDirty] = useState(false);
+
+  // ── Push Notifications ────────────────────────────────────────────────────
+  const [pushTitle, setPushTitle] = useState("");
+  const [pushBody, setPushBody] = useState("");
+  const sendPush = useMutation({
+    mutationFn: () =>
+      fetchJson("/api/push/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: pushTitle, body: pushBody }),
+      }),
+    onSuccess: () => {
+      toast({ title: "Notification sent to all stewards" });
+      setPushTitle("");
+      setPushBody("");
+    },
+    onError: () => toast({ title: "Failed to send notification", variant: "destructive" }),
+  });
 
   const saveSettings = useMutation({
     mutationFn: (body: Record<string, string>) =>
@@ -590,6 +608,42 @@ export default function Admin() {
                       />
                       <p className="text-xs text-muted-foreground">Used for links in notification emails</p>
                     </div>
+                  </div>
+                </div>
+
+                {/* Push Notifications */}
+                <div className="bg-card border border-border rounded-xl overflow-hidden">
+                  <div className="px-4 py-3 border-b border-border bg-muted/30">
+                    <p className="font-extrabold text-sm tracking-tight">Send Push Notification</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Broadcast an instant notification to all stewards</p>
+                  </div>
+                  <div className="p-4 space-y-3">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Title</label>
+                      <Input
+                        placeholder="e.g. Important Update"
+                        value={pushTitle}
+                        onChange={(e) => setPushTitle(e.target.value)}
+                        className="h-11 rounded-xl bg-muted/50"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Message</label>
+                      <Input
+                        placeholder="e.g. Please attend tomorrow's meeting..."
+                        value={pushBody}
+                        onChange={(e) => setPushBody(e.target.value)}
+                        className="h-11 rounded-xl bg-muted/50"
+                      />
+                    </div>
+                    <Button
+                      className="w-full h-11 rounded-xl font-bold gap-2"
+                      disabled={!pushTitle || !pushBody || sendPush.isPending}
+                      onClick={() => sendPush.mutate()}
+                    >
+                      <Bell className="w-4 h-4" />
+                      {sendPush.isPending ? "Sending..." : "Send to All Stewards"}
+                    </Button>
                   </div>
                 </div>
 

@@ -19,6 +19,10 @@ import {
   ensureMemberEnhancements,
   ensureGrievanceNotesTable,
   ensureMemberPortalEnhancements,
+  ensureMeetingsTable,
+  ensurePushSubscriptionsTable,
+  ensureNotificationPreferences,
+  ensureVapidKeys,
   seedDefaultPermissions,
 } from "./lib/seedAdmin";
 const PgStore = connectPgSimple(session);
@@ -79,6 +83,10 @@ ensureSessionTable()
   .then(() => ensureMemberEnhancements())
   .then(() => ensureGrievanceNotesTable())
   .then(() => ensureMemberPortalEnhancements())
+  .then(() => ensureMeetingsTable())
+  .then(() => ensurePushSubscriptionsTable())
+  .then(() => ensureNotificationPreferences())
+  .then(() => ensureVapidKeys())
   .then(() => seedAdminUser())
   .then(() => seedDefaultPermissions())
   .catch((err) => logger.error({ err }, "Startup tasks failed"));

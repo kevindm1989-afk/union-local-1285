@@ -18,6 +18,8 @@ export const ALL_PERMISSIONS = [
   "bulletins.manage",
   "documents.view",
   "documents.upload",
+  "meetings.view",
+  "meetings.manage",
 ] as const;
 
 export type Permission = (typeof ALL_PERMISSIONS)[number];
@@ -30,6 +32,7 @@ const STEWARD_DEFAULT: Permission[] = [
   "bulletins.view",
   "bulletins.post",
   "documents.view",
+  "meetings.view",
 ];
 
 export async function ensureAuditLogTable(): Promise<void> {
@@ -223,6 +226,95 @@ export async function ensureGrievanceNotesTable(): Promise<void> {
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_grievance_notes_grievance ON grievance_notes (grievance_id);
     `);
+  } finally {
+    client.release();
+  }
+}
+
+export async function ensureMeetingsTable(): Promise<void> {
+  const client = await pool.connect();
+  try {
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS meetings (
+        id SERIAL PRIMARY KEY,
+        title TEXT NOT NULL,
+        type VARCHAR(30) NOT NULL DEFAULT 'general',
+        date TIMESTAMPTZ NOT NULL,
+        location TEXT,
+        agenda TEXT,
+        minutes TEXT,
+        minutes_published VARCHAR(10) NOT NULL DEFAULT 'draft',
+        attendees JSONB NOT NULL DEFAULT '[]',
+        created_by INTEGER,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_meetings_date ON meetings (date);
+    `);
+  } finally {
+    client.release();
+  }
+}
+
+export async function ensurePushSubscriptionsTable(): Promise<void> {
+  const client = await pool.connect();
+  try {
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS push_subscriptions (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        endpoint TEXT NOT NULL UNIQUE,
+        p256dh TEXT NOT NULL,
+        auth TEXT NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_push_subs_user ON push_subscriptions (user_id);
+    `);
+  } finally {
+    client.release();
+  }
+}
+
+export async function ensureNotificationPreferences(): Promise<void> {
+  const client = await pool.connect();
+  try {
+    await client.query(`
+      ALTER TABLE members
+        ADD COLUMN IF NOT EXISTS sms_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+        ADD COLUMN IF NOT EXISTS email_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+        ADD COLUMN IF NOT EXISTS push_enabled BOOLEAN NOT NULL DEFAULT TRUE;
+    `);
+    await client.query(`
+      ALTER TABLE members
+        ADD COLUMN IF NOT EXISTS phone_cell TEXT;
+    `);
+  } finally {
+    client.release();
+  }
+}
+
+export async function ensureVapidKeys(): Promise<void> {
+  const client = await pool.connect();
+  try {
+    const existing = await client.query(
+      `SELECT value FROM local_settings WHERE key = 'vapid_public_key' LIMIT 1`
+    );
+    if (existing.rows.length === 0) {
+      const webpush = await import("web-push");
+      const keys = webpush.generateVAPIDKeys();
+      await client.query(
+        `INSERT INTO local_settings (key, value, description) VALUES
+          ('vapid_public_key', $1, 'VAPID public key for Web Push'),
+          ('vapid_private_key', $2, 'VAPID private key for Web Push')
+        ON CONFLICT (key) DO NOTHING`,
+        [keys.publicKey, keys.privateKey]
+      );
+      logger.info("VAPID keys generated and stored in local_settings");
+    }
   } finally {
     client.release();
   }

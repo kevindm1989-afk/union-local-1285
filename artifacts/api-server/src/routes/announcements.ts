@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db, announcementsTable } from "@workspace/db";
 import { requirePermission } from "../lib/permissions";
 import { eq, desc } from "drizzle-orm";
+import { notifyUrgentBulletin } from "../lib/notifications";
 import {
   CreateAnnouncementBody,
   UpdateAnnouncementBody,
@@ -47,6 +48,10 @@ router.post("/", requirePermission("bulletins.post"), async (req, res) => {
       isUrgent: d.isUrgent ?? false,
     })
     .returning();
+
+  if (announcement.isUrgent) {
+    notifyUrgentBulletin({ id: announcement.id, title: announcement.title, content: announcement.content }).catch(() => {});
+  }
 
   res.status(201).json(formatAnnouncement(announcement));
 });

@@ -1,0 +1,111 @@
+You are building a production PWA for a union local, a mobile-first steward management tool deployed on Fly.io with a Neon PostgreSQL database.
+
+## Stack (do not change)
+- Monorepo: pnpm workspaces
+- Frontend: React + Vite + shadcn/ui + TanStack Query + Wouter
+- Backend: Express 5 + TypeScript
+- Database: Neon PostgreSQL (serverless) + Drizzle ORM
+- Validation: Zod (v4) + drizzle-zod
+- API codegen: Orval (OpenAPI spec)
+- Build: esbuild (CJS bundle)
+- Node: 24, TypeScript: 5.9
+- Deploy: Fly.io (Dockerfile already configured)
+- AI: Anthropic Claude API (CBA Q&A assistant)
+
+## Database (Neon)
+Use `DATABASE_URL` environment variable (already set). Neon is serverless — always use connection pooling via `@neondatabase/serverless` driver with `{ ssl: true }`. Do not use `pg` directly.
+
+## What already exists
+- Member CRUD (name, employee_id, department, classification, phone, email, join_date, is_active, notes)
+- Grievance tracking (Steps 1–4, statuses: open | pending_response | pending_hearing | resolved | withdrawn)
+- Announcements/bulletins (categories: general | urgent | contract | meeting | action)
+- Dashboard summary stats
+- Basic RBAC (role-configurable)
+- Claude AI CBA assistant
+- Bottom tab nav: Dashboard, Members, Grievances, Bulletins
+
+## What to build next (in this order)
+
+### 1. SECURITY HARDENING
+- Add audit_log table: tracks user_id, action, entity_type, entity_id, old_value (jsonb), new_value (jsonb), ip_address, timestamp
+- Log all CREATE/UPDATE/DELETE on members and grievances
+- Add session timeout (30 min inactivity) on frontend
+- Add password strength enforcement (min 12 chars, complexity) on registration/reset
+
+### 2. GRIEVANCE ENHANCEMENTS
+- Add file_attachments table: id, entity_type (grievance|member), entity_id, file_name, file_url, uploaded_by, uploaded_at
+- File upload endpoint: POST /api/upload — store to Fly.io volume at /data/uploads, return URL
+- Add deadline_alerts: auto-calculate response deadlines per step (Step 1: 5 days, Step 2: 10 days, Step 3: 15 days, arbitration: 30 days) — surface overdue flags on grievance list
+- Add arbitration as a 5th stage beyond Step 4
+- Add contract_article field (already exists) — link to document library when built
+
+### 3. SENIORITY & DUES TRACKING
+- Add to members table: seniority_date (date), dues_status (enum: current | arrears | exempt), dues_last_paid (date), shift (enum: days | afternoons | nights | rotating), classification_date (date)
+- Seniority is calculated from seniority_date (not join_date)
+- Dues status badge on member profile and member list
+
+### 4. MEMBER PORTAL (separate role: "member")
+- Members log in and see only their own data
+- Member view: profile (self-edit phone/email only), their grievances (read-only status), seniority date, dues status, bulletin feed
+- Members can submit a new grievance (simplified form: issue description, date of incident, photo upload)
+- Digital union card signing: new hire flow with e-signature capture (use signature_pad library), store as base64 image, save to member record
+
+### 5. DOCUMENT LIBRARY
+- New table: documents (id, title, category (enum: cba | moa | bylaw | policy | form | guide), file_url, uploaded_by, uploaded_at, is_active)
+- New page: "Documents" tab in bottom nav
+- Upload interface (admin only), searchable list (all roles)
+- Link grievance contract_article field to relevant CBA document
+
+### 6. MEETING MANAGEMENT
+- New table: meetings (id, title, type (enum: executive | general | stewards), date, location, agenda (text), minutes (text), attendees (jsonb array of member_ids), created_by, created_at)
+- New page: "Meetings" tab (admin only for create/edit, all stewards can view)
+- Calendar view of upcoming meetings
+- Minutes editor with save/publish workflow
+
+### 7. PUSH NOTIFICATIONS
+- Implement Web Push API with VAPID keys
+- New table: push_subscriptions (id, user_id, endpoint, p256dh, auth, created_at)
+- POST /api/push/subscribe — save subscription
+- POST /api/push/send — admin sends notification to all or filtered by role/department
+- Trigger automatic push for: new grievance filed, grievance deadline approaching (48hr warning), urgent bulletin posted
+
+### 8. OFFLINE PWA
+- Add Vite PWA plugin (vite-plugin-pwa)
+- Service worker: cache shell, API responses for members/grievances (stale-while-revalidate)
+- IndexedDB queue for offline grievance submissions — sync when back online
+- Manifest: name "Union Steward App", theme_color "#1a3a5c", display standalone
+
+### 9. MEMBER ENGAGEMENT TRACKING
+- Add to members: engagement_level (enum: active | passive | at_risk | unknown), shop_floor_leader (boolean), organizing_notes (text, admin-only)
+- Engagement dashboard widget for stewards: count by level, list of at-risk members
+- This data is NEVER visible to member role — enforce at API level
+
+### 10. MULTI-CHANNEL NOTIFICATIONS
+- Integrate Twilio for SMS (use TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM env vars)
+- Integrate SendGrid for email (use SENDGRID_API_KEY env var)
+- Notification preferences per member: sms_enabled (boolean), email_enabled (boolean), push_enabled (boolean)
+- Trigger on: urgent bulletins, grievance status changes, meeting reminders (24hr before)
+
+## Environment Variables (already set on Fly.io)
+DATABASE_URL — Neon connection string (use pooled URL)
+SESSION_SECRET — for express-session
+ANTHROPIC_API_KEY — Claude AI
+Add as needed: TWILIO_*, SENDGRID_API_KEY, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY
+
+## Coding Rules
+- Always use Drizzle ORM — never raw SQL
+- All new tables need a migration file under db/migrations/
+- All new API routes need corresponding OpenAPI spec entries and Orval codegen run
+- All sensitive member fields (phone, email, organizing_notes) must never appear in grievance API responses
+- Role checks on every protected route: throw 403 if role insufficient
+- Never expose audit_log or engagement data to "member" role
+- All dates stored as UTC — display in the local timezone configured by the deployment
+- TypeScript strict mode — no `any` types
+- Error responses: { error: string, code: string } format consistently
+
+## Labour Law Context
+- Grievance deadlines are governed by the collective agreement — always surface due_date prominently
+- Duty to accommodate — add accommodation_request boolean field on grievances
+- Privacy compliance: member personal data access must be logged (covered by audit_log above)
+- Grievance step deadlines are configurable — do not hardcode; read from a local_settings table
+- All legal references in the UI should use neutral language (e.g. "collective agreement" not jurisdiction-specific statute names)

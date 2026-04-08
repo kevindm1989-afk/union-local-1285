@@ -1,14 +1,16 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Users, FileText, Bell, Bot, FolderOpen, Plus, LogOut, ChevronDown, ShieldCheck } from "lucide-react";
+import { LayoutDashboard, Users, FileText, Bell, Bot, FolderOpen, Plus, LogOut, ChevronDown, ShieldCheck, CalendarDays, BellRing, BellOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth, usePermissions } from "@/App";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 export function MobileLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { user, logout } = useAuth();
   const { roleLabel, can } = usePermissions();
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const { status: pushStatus, subscribe, unsubscribe } = usePushNotifications();
 
   const getSection = () => {
     if (location.startsWith("/members")) return "members";
@@ -16,6 +18,7 @@ export function MobileLayout({ children }: { children: React.ReactNode }) {
     if (location.startsWith("/bulletins")) return "bulletins";
     if (location.startsWith("/documents")) return "documents";
     if (location.startsWith("/assistant")) return "assistant";
+    if (location.startsWith("/meetings")) return "meetings";
     return "dashboard";
   };
 
@@ -25,6 +28,7 @@ export function MobileLayout({ children }: { children: React.ReactNode }) {
     if (section === "members" && can("members.edit")) return "/members/new";
     if (section === "grievances" && can("grievances.file")) return "/grievances/new";
     if (section === "bulletins" && can("bulletins.post")) return "/bulletins/new";
+    if (section === "meetings" && can("meetings.manage")) return "/meetings/new";
     return null;
   };
 
@@ -33,8 +37,9 @@ export function MobileLayout({ children }: { children: React.ReactNode }) {
   const navItems = [
     { id: "dashboard", href: "/", icon: LayoutDashboard, label: "Home" },
     { id: "members", href: "/members", icon: Users, label: "Members" },
-    { id: "grievances", href: "/grievances", icon: FileText, label: "Grievances" },
+    { id: "grievances", href: "/grievances", icon: FileText, label: "Griev." },
     { id: "bulletins", href: "/bulletins", icon: Bell, label: "Bulletins" },
+    { id: "meetings", href: "/meetings", icon: CalendarDays, label: "Meetings" },
     { id: "documents", href: "/documents", icon: FolderOpen, label: "Docs" },
     { id: "assistant", href: "/assistant", icon: Bot, label: "AI" },
   ];
@@ -80,6 +85,25 @@ export function MobileLayout({ children }: { children: React.ReactNode }) {
                       <ShieldCheck className="w-4 h-4 text-primary" />
                       Admin Panel
                     </Link>
+                  )}
+                  {pushStatus !== "unsupported" && pushStatus !== "denied" && (
+                    <button
+                      onClick={async () => {
+                        setShowUserMenu(false);
+                        if (pushStatus === "subscribed") {
+                          await unsubscribe();
+                        } else {
+                          await subscribe();
+                        }
+                      }}
+                      className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted/50 transition-colors"
+                    >
+                      {pushStatus === "subscribed" ? (
+                        <><BellOff className="w-4 h-4 text-muted-foreground" />Disable Notifications</>
+                      ) : (
+                        <><BellRing className="w-4 h-4 text-primary" />Enable Notifications</>
+                      )}
+                    </button>
                   )}
                   <button
                     onClick={() => { setShowUserMenu(false); logout(); }}
