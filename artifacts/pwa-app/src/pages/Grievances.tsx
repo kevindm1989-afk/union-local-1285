@@ -2,10 +2,10 @@ import { useListGrievances, getListGrievancesQueryKey } from "@workspace/api-cli
 import { MobileLayout } from "@/components/layout/MobileLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "wouter";
-import { FileText, ChevronRight, Clock, AlertTriangle, CheckCircle, XCircle } from "lucide-react";
+import { Clock, CheckCircle, Search, X } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
 
 const statuses = [
@@ -14,15 +14,30 @@ const statuses = [
   { id: "pending_response", label: "Awaiting Response" },
   { id: "pending_hearing", label: "Awaiting Hearing" },
   { id: "resolved", label: "Resolved" },
+  { id: "withdrawn", label: "Withdrawn" },
 ];
 
 export default function Grievances() {
   const [filter, setFilter] = useState("all");
+  const [search, setSearch] = useState("");
 
   const { data: grievances, isLoading } = useListGrievances(
     { status: filter === "all" ? undefined : filter as any },
     { query: { queryKey: getListGrievancesQueryKey({ status: filter === "all" ? undefined : filter as any }) } }
   );
+
+  const filtered = useMemo(() => {
+    if (!grievances) return [];
+    const q = search.trim().toLowerCase();
+    if (!q) return grievances;
+    return grievances.filter(
+      (g) =>
+        g.title.toLowerCase().includes(q) ||
+        g.grievanceNumber.toLowerCase().includes(q) ||
+        (g.memberName ?? "").toLowerCase().includes(q) ||
+        (g.contractArticle ?? "").toLowerCase().includes(q),
+    );
+  }, [grievances, search]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -37,11 +52,31 @@ export default function Grievances() {
 
   return (
     <MobileLayout>
-      <div className="p-4 sm:p-6 space-y-6">
+      <div className="p-4 sm:p-6 space-y-4">
         <header>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Grievances</h1>
           <p className="text-muted-foreground mt-1">Active disputes & history</p>
         </header>
+
+        {/* Search bar */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by title, number, or member…"
+            className="w-full h-11 rounded-xl border border-border bg-card pl-9 pr-9 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
 
         {/* Filter Scroll */}
         <div className="flex overflow-x-auto no-scrollbar gap-2 pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
@@ -51,8 +86,8 @@ export default function Grievances() {
               onClick={() => setFilter(s.id)}
               className={cn(
                 "whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-colors border",
-                filter === s.id 
-                  ? "bg-foreground text-background border-foreground" 
+                filter === s.id
+                  ? "bg-foreground text-background border-foreground"
                   : "bg-card text-muted-foreground border-border hover:bg-muted"
               )}
             >
@@ -75,28 +110,28 @@ export default function Grievances() {
                 </CardContent>
               </Card>
             ))
-          ) : grievances?.length === 0 ? (
+          ) : filtered.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <CheckCircle className="w-12 h-12 mx-auto mb-3 opacity-20 text-green-500" />
-              <p>No grievances found in this view</p>
+              <p className="text-sm">{search ? `No results for "${search}"` : "No grievances found in this view"}</p>
             </div>
           ) : (
-            grievances?.map((g) => (
+            filtered.map((g) => (
               <Link key={g.id} href={`/grievances/${g.id}`} className="block transition-transform active:scale-[0.98]">
                 <Card className="shadow-sm border-border hover:border-primary/50 transition-colors">
                   <CardContent className="p-4">
                     <div className="flex justify-between items-start mb-2">
                       <span className="text-xs font-bold text-muted-foreground">{g.grievanceNumber}</span>
                       <span className={cn("text-[10px] uppercase font-bold px-2 py-0.5 rounded-sm border", getStatusColor(g.status))}>
-                        {g.status.replace('_', ' ')}
+                        {g.status.replace(/_/g, ' ')}
                       </span>
                     </div>
-                    
+
                     <h3 className="font-semibold text-foreground text-lg leading-tight mb-1">{g.title}</h3>
                     <p className="text-sm text-muted-foreground mb-4">
                       {g.memberName ? `Member: ${g.memberName}` : "General Grievance"}
                     </p>
-                    
+
                     <div className="flex items-center justify-between pt-3 border-t border-border/50 text-xs text-muted-foreground">
                       <div className="flex items-center gap-2">
                         <span className="flex items-center gap-1 font-medium bg-muted px-2 py-1 rounded">
@@ -113,7 +148,7 @@ export default function Grievances() {
                           </span>
                         )}
                       </div>
-                      
+
                       <div className="flex flex-col items-end gap-0.5">
                         <span className="flex items-center gap-1">
                           <Clock className="w-3.5 h-3.5" />
@@ -132,6 +167,11 @@ export default function Grievances() {
             ))
           )}
         </div>
+        {search && filtered.length > 0 && (
+          <p className="text-xs text-center text-muted-foreground pb-2">
+            {filtered.length} result{filtered.length !== 1 ? "s" : ""} for "{search}"
+          </p>
+        )}
       </div>
     </MobileLayout>
   );

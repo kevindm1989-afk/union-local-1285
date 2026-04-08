@@ -5,10 +5,11 @@ import {
   getGetDashboardSummaryQueryKey,
   getGetRecentActivityQueryKey,
 } from "@workspace/api-client-react";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { format } from "date-fns";
+import { format, parseISO, differenceInCalendarDays } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, FileText, AlertTriangle, Clock, ChevronRight, Bell } from "lucide-react";
+import { Users, FileText, AlertTriangle, Clock, ChevronRight, Bell, CalendarClock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const statusColors: Record<string, string> = {
@@ -27,6 +28,16 @@ const categoryColors: Record<string, string> = {
   general: "bg-gray-100 text-gray-700 border-gray-200",
 };
 
+interface UpcomingGrievance {
+  id: number;
+  grievanceNumber: string;
+  title: string;
+  step: number;
+  status: string;
+  dueDate: string;
+  isOverdue: boolean;
+}
+
 export default function Dashboard() {
   const { data: summary, isLoading: isLoadingSummary } = useGetDashboardSummary({
     query: { queryKey: getGetDashboardSummaryQueryKey() },
@@ -34,6 +45,13 @@ export default function Dashboard() {
   const { data: activity, isLoading: isLoadingActivity } = useGetRecentActivity({
     query: { queryKey: getGetRecentActivityQueryKey() },
   });
+  const { data: upcoming = [], isLoading: isLoadingUpcoming } = useQuery<UpcomingGrievance[]>({
+    queryKey: ["dashboard-upcoming"],
+    queryFn: () => fetch("/api/dashboard/upcoming", { credentials: "include" }).then((r) => r.json()),
+    staleTime: 60_000,
+  });
+
+  const today = new Date();
 
   return (
     <MobileLayout>
@@ -118,10 +136,68 @@ export default function Dashboard() {
           )}
         </section>
 
+        {/* Due Soon */}
+        {(isLoadingUpcoming || upcoming.length > 0) && (
+          <section className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <CalendarClock className="w-4 h-4 text-amber-500" />
+                <h2 className="text-xs font-bold tracking-widest uppercase text-muted-foreground">Due Within 14 Days</h2>
+              </div>
+              <Link href="/grievances" className="text-xs font-semibold text-primary flex items-center gap-0.5">
+                View all <ChevronRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+
+            <div className="space-y-2">
+              {isLoadingUpcoming ? (
+                Array(2).fill(0).map((_, i) => <Skeleton key={i} className="h-16 rounded-xl" />)
+              ) : (
+                upcoming.map((g) => {
+                  const dueDate = parseISO(g.dueDate);
+                  const daysUntil = differenceInCalendarDays(dueDate, today);
+                  const urgent = daysUntil <= 3;
+                  return (
+                    <Link key={g.id} href={`/grievances/${g.id}`}>
+                      <div className={cn(
+                        "rounded-xl border px-4 py-3 flex items-center justify-between gap-3 active:opacity-80 transition-opacity",
+                        g.isOverdue
+                          ? "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900/30"
+                          : urgent
+                            ? "bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/30"
+                            : "bg-card border-border",
+                      )}>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-foreground truncate">{g.title}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-xs text-muted-foreground">{g.grievanceNumber}</span>
+                            <span className={cn("text-[9px] uppercase font-bold px-1.5 py-0.5 rounded border", statusColors[g.status])}>
+                              {g.status.replace(/_/g, " ")}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className={cn(
+                            "text-xs font-bold",
+                            g.isOverdue ? "text-red-700" : urgent ? "text-amber-700" : "text-muted-foreground",
+                          )}>
+                            {g.isOverdue ? "Overdue" : daysUntil === 0 ? "Today" : daysUntil === 1 ? "Tomorrow" : `${daysUntil}d`}
+                          </p>
+                          <p className="text-[11px] text-muted-foreground">{format(dueDate, "MMM d")}</p>
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })
+              )}
+            </div>
+          </section>
+        )}
+
         {/* Recent Grievances */}
         <section className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold tracking-tight uppercase text-muted-foreground text-xs tracking-widest">Recent Grievances</h2>
+            <h2 className="text-xs font-bold tracking-widest uppercase text-muted-foreground">Recent Grievances</h2>
             <Link href="/grievances" className="text-xs font-semibold text-primary flex items-center gap-0.5">
               View all <ChevronRight className="w-3.5 h-3.5" />
             </Link>
@@ -159,7 +235,7 @@ export default function Dashboard() {
         <section className="space-y-3 pb-2">
           <div className="flex items-center justify-between">
             <h2 className="text-xs font-bold tracking-widest uppercase text-muted-foreground">Latest Bulletins</h2>
-            <Link href="/bulletins" className="text-xs font-semibold text-primary flex items-center gap-0.5">
+            <Link href="/bulletins" className="text-xs font-semibold text-primary flex items-center gap=0.5">
               View all <ChevronRight className="w-3.5 h-3.5" />
             </Link>
           </div>

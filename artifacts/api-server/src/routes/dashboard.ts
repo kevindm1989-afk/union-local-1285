@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, membersTable, grievancesTable, announcementsTable } from "@workspace/db";
-import { desc, sql } from "drizzle-orm";
+import { asc, desc, sql, and, notInArray, isNotNull, lte, gte } from "drizzle-orm";
 
 const router = Router();
 
@@ -84,6 +84,38 @@ router.get("/recent-activity", async (_req, res) => {
       updatedAt: a.updatedAt.toISOString(),
     })),
   });
+});
+
+router.get("/upcoming", async (_req, res) => {
+  const today = new Date().toISOString().split("T")[0];
+  const in14Days = new Date();
+  in14Days.setDate(in14Days.getDate() + 14);
+  const cutoff = in14Days.toISOString().split("T")[0];
+
+  const rows = await db
+    .select()
+    .from(grievancesTable)
+    .where(
+      and(
+        isNotNull(grievancesTable.dueDate),
+        lte(grievancesTable.dueDate, cutoff),
+        notInArray(grievancesTable.status, ["resolved", "withdrawn"]),
+      ),
+    )
+    .orderBy(asc(grievancesTable.dueDate))
+    .limit(10);
+
+  res.json(
+    rows.map((g) => ({
+      id: g.id,
+      grievanceNumber: g.grievanceNumber,
+      title: g.title,
+      step: g.step,
+      status: g.status,
+      dueDate: g.dueDate,
+      isOverdue: g.dueDate != null && g.dueDate < today,
+    })),
+  );
 });
 
 export default router;
