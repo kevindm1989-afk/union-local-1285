@@ -78,7 +78,18 @@ export default function MemberPortalSignCard() {
   };
 
   const handleClear = () => {
-    padRef.current?.clear();
+    const canvas = canvasRef.current;
+    const pad = padRef.current;
+    if (!canvas || !pad) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    const ctx = canvas.getContext("2d");
+    if (ctx) ctx.scale(dpr, dpr);
+
+    pad.clear();
     setIsEmpty(true);
   };
 
