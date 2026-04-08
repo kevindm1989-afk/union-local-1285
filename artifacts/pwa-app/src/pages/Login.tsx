@@ -113,7 +113,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
 
       <div className="pb-8 text-center">
         <p className="text-xs text-muted-foreground">
-          Union Local — Steward Access Only
+          Union Local — Member & Steward Portal
         </p>
       </div>
     </div>
