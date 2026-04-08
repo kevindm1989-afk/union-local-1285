@@ -219,6 +219,9 @@ export default function MemberDetail() {
         queryClient.invalidateQueries({ queryKey: getListMembersQueryKey() });
         setLocation("/members");
       },
+      onError: () => {
+        toast({ title: "Delete failed", description: "Could not delete member. Please try again.", variant: "destructive" });
+      },
     },
   });
 
@@ -878,13 +881,16 @@ export default function MemberDetail() {
                   onChange={(e) => setDeleteConfirmName(e.target.value)}
                   placeholder={member.name}
                   className="mx-0 rounded-xl font-mono"
+                  autoCorrect="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
                 />
                 <AlertDialogFooter className="flex-col gap-2">
                   <AlertDialogCancel className="w-full rounded-xl">Cancel</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={handleDelete}
                     className="bg-destructive hover:bg-destructive/90 w-full rounded-xl"
-                    disabled={deleteMember.isPending || deleteConfirmName !== member.name}
+                    disabled={deleteMember.isPending || deleteConfirmName.trim() !== member.name.trim()}
                   >
                     {deleteMember.isPending ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
