@@ -25,7 +25,7 @@ import pollsRouter from "./polls";
 import onboardingRouter from "./onboarding";
 import cbaInfoRouter from "./cba-info";
 import accessRequestsRouter from "./access-requests";
-import { requirePermission } from "../lib/permissions";
+import { requirePermission, requireSteward } from "../lib/permissions";
 
 // Init VAPID keys after the DB startup chain completes
 setTimeout(() => initVapid().catch(() => {}), 5000);
@@ -58,19 +58,63 @@ router.use("/anthropic", anthropicRouter);
 router.use("/settings", requirePermission("members.edit"), settingsRouter);
 router.use("/audit-logs", requirePermission("members.edit"), auditLogsRouter);
 router.use("/meetings", requirePermission("meetings.view"), meetingsRouter);
-router.use("/push", pushRouter);
 router.use("/grievances/:grievanceId/notes", requirePermission("grievances.view"), grievanceNotesRouter);
 
-// Advanced steward features
-router.use("/grievances/:grievanceId/journal", journalRouter);
-router.use("/grievances/:grievanceId/just-cause", justCauseRouter);
-router.use("/grievances/:grievanceId/communications", communicationsRouter);
-router.use("/grievance-templates", grievanceTemplatesRouter);
-router.use("/members/:memberId/discipline", disciplineRouter);
-router.use("/members/:memberId/onboarding", onboardingRouter);
-router.use("/stats", statsRouter);
-router.use("/coverage", coverageRouter);
-router.use("/polls", pollsRouter);
+// ─── Push notifications: any authenticated user may subscribe / retrieve VAPID key ───
+// Members need push subscriptions for their own portal notifications.
+router.use("/push", pushRouter);
+
+// ─── Steward-only route groups ────────────────────────────────────────────────
+// Defense-in-depth: requireSteward is applied here at the mount point AND
+// inside each router file. Both layers must pass independently.
+//
+// "steward" role = steward | co_chair | chair | admin
+// "member" role  = blocked from all routes in this section
+
+router.use(
+  "/grievances/:grievanceId/journal",
+  requireSteward,
+  journalRouter,
+);
+
+router.use(
+  "/grievances/:grievanceId/just-cause",
+  requireSteward,
+  justCauseRouter,
+);
+
+router.use(
+  "/grievances/:grievanceId/communications",
+  requireSteward,
+  communicationsRouter,
+);
+
+router.use(
+  "/grievance-templates",
+  requireSteward,
+  grievanceTemplatesRouter,
+);
+
+router.use(
+  "/members/:memberId/discipline",
+  requireSteward,
+  disciplineRouter,
+);
+
+router.use(
+  "/members/:memberId/onboarding",
+  requireSteward,
+  onboardingRouter,
+);
+
+router.use("/stats",    requireSteward, statsRouter);
+router.use("/coverage", requireSteward, coverageRouter);
+
+// ─── Member-accessible route groups ──────────────────────────────────────────
+// Any authenticated session (including role = "member") may reach these.
+// Individual endpoints within these routers enforce their own write-guard where needed.
+
+router.use("/polls",    pollsRouter);
 router.use("/cba-info", cbaInfoRouter);
 
 export default router;
