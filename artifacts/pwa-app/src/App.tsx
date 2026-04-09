@@ -1,4 +1,5 @@
 import { useState, useEffect, createContext, useContext, useCallback } from "react";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useIdleTimeout } from "@/hooks/useIdleTimeout";
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -195,20 +196,22 @@ function App() {
   }
 
   return (
-    <AuthContext.Provider value={{ user, logout }}>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-            <IdleLogout />
-            <Switch>
-              <Route path="/polls" component={Polls} />
-              <Route>{user?.role === "member" ? <MemberPortalRouter /> : <StewardRouter />}</Route>
-            </Switch>
-          </WouterRouter>
-          <Toaster />
-        </TooltipProvider>
-      </QueryClientProvider>
-    </AuthContext.Provider>
+    <ErrorBoundary>
+      <AuthContext.Provider value={{ user, logout }}>
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+              <IdleLogout />
+              <Switch>
+                <Route path="/polls" component={Polls} />
+                <Route>{user?.role === "member" ? <MemberPortalRouter /> : <StewardRouter />}</Route>
+              </Switch>
+            </WouterRouter>
+            <Toaster />
+          </TooltipProvider>
+        </QueryClientProvider>
+      </AuthContext.Provider>
+    </ErrorBoundary>
   );
 }
 
