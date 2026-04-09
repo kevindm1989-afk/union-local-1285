@@ -1,0 +1,58 @@
+Add missing database indexes to prevent full table scans as data grows.
+
+### Files to fix (schema files in lib/db/src/schema/)
+Add Drizzle index() definitions to the following tables and columns:
+
+### grievances table
+import { index } from 'drizzle-orm/pg-core'
+
+export const grievances = pgTable('grievances', {
+  // existing columns unchanged
+}, (table) => ({
+  memberIdIdx: index('grievances_member_id_idx').on(table.memberId),
+  statusIdx: index('grievances_status_idx').on(table.status),
+  createdAtIdx: index('grievances_created_at_idx').on(table.createdAt),
+  dueDateIdx: index('grievances_due_date_idx').on(table.dueDate)
+}))
+
+### discipline_records table
+}, (table) => ({
+  memberIdIdx: index('discipline_member_id_idx').on(table.memberId),
+  createdAtIdx: index('discipline_created_at_idx').on(table.createdAt)
+}))
+
+### case_journal_entries table
+}, (table) => ({
+  grievanceIdIdx: index('journal_grievance_id_idx').on(table.grievanceId),
+  authorIdIdx: index('journal_author_id_idx').on(table.authorId),
+  createdAtIdx: index('journal_created_at_idx').on(table.createdAt)
+}))
+
+### member_communication_log table
+}, (table) => ({
+  grievanceIdIdx: index('comms_grievance_id_idx').on(table.grievanceId),
+  memberIdIdx: index('comms_member_id_idx').on(table.memberId)
+}))
+
+### members table
+}, (table) => ({
+  employeeIdIdx: index('members_employee_id_idx').on(table.employeeId),
+  departmentIdx: index('members_department_idx').on(table.department),
+  isActiveIdx: index('members_is_active_idx').on(table.isActive)
+}))
+
+### access_requests table
+}, (table) => ({
+  statusIdx: index('access_requests_status_idx').on(table.status),
+  emailIdx: index('access_requests_email_idx').on(table.email)
+}))
+
+After adding all indexes run:
+pnpm --filter @workspace/db run push
+
+This pushes schema changes to Neon without a full migration file — 
+acceptable for index-only changes in development. 
+For production generate a proper migration:
+pnpm --filter @workspace/db run generate
+
+Do not change any column definitions — only add the index blocks.
