@@ -2,9 +2,19 @@ import { Router, type Request, type Response } from "express";
 import { db, membersTable, grievancesTable, announcementsTable, usersTable, disciplineRecordsTable } from "@workspace/db";
 import { eq, desc, asc } from "drizzle-orm";
 import { anthropic } from "@workspace/integrations-anthropic-ai";
+import { z } from "zod/v4";
 import { asyncHandler } from "../lib/asyncHandler";
 // @ts-ignore — .txt imported via esbuild text loader
 import cbaText from "../data/cba.txt";
+
+const chatSchema = z.object({
+  messages: z.array(
+    z.object({
+      role: z.enum(["user", "assistant"]),
+      content: z.string().min(1).max(10000),
+    }),
+  ).min(1).max(50),
+});
 
 const MEMBER_AI_SYSTEM_PROMPT = `You are a knowledgeable union assistant for your union local. You help members understand their rights and entitlements under the Collective Agreement.
 
@@ -245,20 +255,13 @@ router.post("/sign-card", requireMemberRole, asyncHandler(async (req: Request, r
  * Has its own try/catch for streaming error handling.
  */
 router.post("/ai/chat", requireMemberRole, async (req: Request, res: Response) => {
-  const { messages } = req.body ?? {};
-  if (!Array.isArray(messages) || messages.length === 0) {
-    res.status(400).json({ error: "messages array is required" });
+  const parsed = chatSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(422).json({ error: "Invalid request body", code: "VALIDATION_ERROR" });
     return;
   }
 
-  const chatMessages = messages
-    .filter((m: any) => m.role && m.content)
-    .map((m: any) => ({ role: m.role as "user" | "assistant", content: String(m.content) }));
-
-  if (chatMessages.length === 0) {
-    res.status(400).json({ error: "No valid messages" });
-    return;
-  }
+  const chatMessages = parsed.data.messages;
 
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");

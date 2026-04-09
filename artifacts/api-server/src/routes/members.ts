@@ -1,5 +1,6 @@
 import { Router } from "express";
 import multer from "multer";
+import { z } from "zod/v4";
 import { db, membersTable, grievancesTable, memberFilesTable, usersTable } from "@workspace/db";
 import { eq, and, ilike, or, desc } from "drizzle-orm";
 import { sendMemberDeactivatedEmail } from "../lib/email";
@@ -9,13 +10,50 @@ import { logAudit } from "../lib/auditLog";
 import { asyncHandler } from "../lib/asyncHandler";
 import {
   CreateMemberBody,
-  UpdateMemberBody,
   ListMembersQueryParams,
   GetMemberParams,
   UpdateMemberParams,
   DeleteMemberParams,
   GetMemberGrievancesParams,
 } from "@workspace/api-zod";
+
+// ─── PATCH /members/:id — full body schema with role-sensitive field gating ──
+
+const DUES_STATUS = ["current", "arrears", "exempt"] as const;
+const SHIFT_VALUES = ["days", "afternoons", "nights", "rotating"] as const;
+
+/** Fields any role with members.edit permission can update */
+const baseUpdateFields = {
+  name:               z.string().min(1).max(255).optional(),
+  employeeId:         z.string().max(50).nullable().optional(),
+  department:         z.string().max(100).nullable().optional(),
+  classification:     z.string().max(100).nullable().optional(),
+  phone:              z.string().max(30).nullable().optional(),
+  email:              z.email().max(255).nullable().optional(),
+  joinDate:           z.string().nullable().optional(),
+  shift:              z.enum(SHIFT_VALUES).nullable().optional(),
+  classificationDate: z.string().nullable().optional(),
+  smsEnabled:         z.boolean().optional(),
+  emailEnabled:       z.boolean().optional(),
+  pushEnabled:        z.boolean().optional(),
+};
+
+/** Additional fields only admin / steward / chair roles may apply */
+const privilegedUpdateFields = {
+  isActive:     z.boolean().optional(),
+  notes:        z.string().max(10000).nullable().optional(),
+  duesStatus:   z.enum(DUES_STATUS).nullable().optional(),
+  duesLastPaid: z.string().nullable().optional(),
+  seniorityDate: z.string().nullable().optional(),
+};
+
+const PatchMemberBodySchema = z.object({
+  ...baseUpdateFields,
+  ...privilegedUpdateFields,
+});
+
+/** Privileged-field keys — stripped when the caller is a plain member */
+const PRIVILEGED_FIELDS = Object.keys(privilegedUpdateFields) as (keyof typeof privilegedUpdateFields)[];
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
 
@@ -137,32 +175,42 @@ router.patch("/:id", requirePermission("members.edit"), asyncHandler(async (req,
     return;
   }
 
-  const bodyParsed = UpdateMemberBody.safeParse(req.body);
+  const bodyParsed = PatchMemberBodySchema.safeParse(req.body);
   if (!bodyParsed.success) {
-    res.status(400).json({ error: "Invalid body" });
+    res.status(422).json({ error: "Invalid request body", code: "VALIDATION_ERROR", details: bodyParsed.error.issues });
     return;
   }
 
   const d = bodyParsed.data;
-  const body = req.body as Record<string, unknown>;
+
+  // Strip privileged fields when the caller only has member-level role
+  const callerRole = req.session?.role ?? "member";
+  const isPrivileged = callerRole === "admin" || callerRole === "chair" || callerRole === "steward";
+  if (!isPrivileged) {
+    for (const field of PRIVILEGED_FIELDS) {
+      delete d[field];
+    }
+  }
+
   const updates: Record<string, unknown> = { updatedAt: new Date() };
-  if (d.name !== undefined) updates.name = d.name;
-  if (d.employeeId !== undefined) updates.employeeId = d.employeeId;
-  if (d.department !== undefined) updates.department = d.department;
-  if (d.classification !== undefined) updates.classification = d.classification;
-  if (d.phone !== undefined) updates.phone = d.phone;
-  if (d.email !== undefined) updates.email = d.email;
-  if (d.joinDate !== undefined) updates.joinDate = d.joinDate;
-  if (d.isActive !== undefined) updates.isActive = d.isActive;
-  if (d.notes !== undefined) updates.notes = d.notes;
-  if (body.seniorityDate !== undefined) updates.seniorityDate = body.seniorityDate || null;
-  if (body.duesStatus !== undefined) updates.duesStatus = body.duesStatus || null;
-  if (body.duesLastPaid !== undefined) updates.duesLastPaid = body.duesLastPaid || null;
-  if (body.shift !== undefined) updates.shift = body.shift || null;
-  if (body.classificationDate !== undefined) updates.classificationDate = body.classificationDate || null;
-  if (body.smsEnabled !== undefined) updates.smsEnabled = Boolean(body.smsEnabled);
-  if (body.emailEnabled !== undefined) updates.emailEnabled = Boolean(body.emailEnabled);
-  if (body.pushEnabled !== undefined) updates.pushEnabled = Boolean(body.pushEnabled);
+  if (d.name !== undefined)               updates.name = d.name;
+  if (d.employeeId !== undefined)         updates.employeeId = d.employeeId;
+  if (d.department !== undefined)         updates.department = d.department;
+  if (d.classification !== undefined)     updates.classification = d.classification;
+  if (d.phone !== undefined)              updates.phone = d.phone;
+  if (d.email !== undefined)              updates.email = d.email;
+  if (d.joinDate !== undefined)           updates.joinDate = d.joinDate;
+  if (d.shift !== undefined)              updates.shift = d.shift;
+  if (d.classificationDate !== undefined) updates.classificationDate = d.classificationDate;
+  if (d.smsEnabled !== undefined)         updates.smsEnabled = d.smsEnabled;
+  if (d.emailEnabled !== undefined)       updates.emailEnabled = d.emailEnabled;
+  if (d.pushEnabled !== undefined)        updates.pushEnabled = d.pushEnabled;
+  // Privileged (only present when caller is admin/steward/chair)
+  if (d.isActive !== undefined)           updates.isActive = d.isActive;
+  if (d.notes !== undefined)              updates.notes = d.notes;
+  if (d.duesStatus !== undefined)         updates.duesStatus = d.duesStatus;
+  if (d.duesLastPaid !== undefined)       updates.duesLastPaid = d.duesLastPaid;
+  if (d.seniorityDate !== undefined)      updates.seniorityDate = d.seniorityDate;
 
   const [existing] = await db.select().from(membersTable).where(eq(membersTable.id, paramParsed.data.id));
 
