@@ -18,24 +18,24 @@ const router = Router();
 
 router.use(requireSteward);
 
-async function fmt(c: typeof stewardCoverageTable.$inferSelect) {
-  const [u] = await db.select({ displayName: usersTable.displayName }).from(usersTable).where(eq(usersTable.id, c.stewardId));
-  return {
-    id: c.id,
-    stewardId: c.stewardId,
-    stewardName: u?.displayName ?? null,
-    department: c.department,
-    shift: c.shift,
-    areaNotes: c.areaNotes,
-    createdAt: c.createdAt.toISOString(),
-    updatedAt: c.updatedAt.toISOString(),
-  };
-}
+const coverageSelect = {
+  id: stewardCoverageTable.id,
+  stewardId: stewardCoverageTable.stewardId,
+  stewardName: usersTable.displayName,
+  department: stewardCoverageTable.department,
+  shift: stewardCoverageTable.shift,
+  areaNotes: stewardCoverageTable.areaNotes,
+  createdAt: stewardCoverageTable.createdAt,
+  updatedAt: stewardCoverageTable.updatedAt,
+};
 
 router.get("/", asyncHandler(async (_req, res) => {
-  const rows = await db.select().from(stewardCoverageTable).orderBy(stewardCoverageTable.department);
-  const result = await Promise.all(rows.map(fmt));
-  res.json(result);
+  const rows = await db
+    .select(coverageSelect)
+    .from(stewardCoverageTable)
+    .leftJoin(usersTable, eq(stewardCoverageTable.stewardId, usersTable.id))
+    .orderBy(stewardCoverageTable.department);
+  res.json(rows.map((r) => ({ ...r, createdAt: r.createdAt.toISOString(), updatedAt: r.updatedAt.toISOString() })));
 }));
 
 router.post("/", asyncHandler(async (req, res) => {
@@ -57,8 +57,13 @@ router.post("/", asyncHandler(async (req, res) => {
     department: body.department,
     shift: body.shift,
     areaNotes: body.areaNotes ?? null,
-  }).returning();
-  res.status(201).json(await fmt(c));
+  }).returning({ id: stewardCoverageTable.id });
+  const [row] = await db
+    .select(coverageSelect)
+    .from(stewardCoverageTable)
+    .leftJoin(usersTable, eq(stewardCoverageTable.stewardId, usersTable.id))
+    .where(eq(stewardCoverageTable.id, c.id));
+  res.status(201).json({ ...row, createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString() });
 }));
 
 router.patch("/:id", asyncHandler(async (req, res) => {
@@ -81,9 +86,14 @@ router.patch("/:id", asyncHandler(async (req, res) => {
   if (body.department !== undefined) updates.department = body.department;
   if (body.shift !== undefined) updates.shift = body.shift;
   if (body.areaNotes !== undefined) updates.areaNotes = body.areaNotes;
-  const [c] = await db.update(stewardCoverageTable).set(updates).where(eq(stewardCoverageTable.id, id)).returning();
+  const [c] = await db.update(stewardCoverageTable).set(updates).where(eq(stewardCoverageTable.id, id)).returning({ id: stewardCoverageTable.id });
   if (!c) { res.status(404).json({ error: "Not found", code: "NOT_FOUND" }); return; }
-  res.json(await fmt(c));
+  const [row] = await db
+    .select(coverageSelect)
+    .from(stewardCoverageTable)
+    .leftJoin(usersTable, eq(stewardCoverageTable.stewardId, usersTable.id))
+    .where(eq(stewardCoverageTable.id, c.id));
+  res.json({ ...row, createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString() });
 }));
 
 router.delete("/:id", asyncHandler(async (req, res) => {
