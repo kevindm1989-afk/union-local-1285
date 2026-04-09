@@ -3,6 +3,7 @@ import { db, meetingsTable } from "@workspace/db";
 import { eq, desc, gte } from "drizzle-orm";
 import { requirePermission } from "../lib/permissions";
 import { sendPushToAll } from "./push";
+import { asyncHandler } from "../lib/asyncHandler";
 
 const router = Router();
 
@@ -23,10 +24,8 @@ function formatMeeting(m: typeof meetingsTable.$inferSelect) {
   };
 }
 
-router.get("/", async (req: Request, res) => {
+router.get("/", asyncHandler(async (req: Request, res) => {
   const { upcoming } = req.query;
-  let query = db.select().from(meetingsTable);
-
   let meetings: typeof meetingsTable.$inferSelect[];
   if (upcoming === "true") {
     meetings = await db
@@ -42,9 +41,9 @@ router.get("/", async (req: Request, res) => {
   }
 
   res.json(meetings.map(formatMeeting));
-});
+}));
 
-router.post("/", requirePermission("meetings.manage"), async (req: Request, res) => {
+router.post("/", requirePermission("meetings.manage"), asyncHandler(async (req: Request, res) => {
   const { title, type, date, location, agenda } = req.body;
   if (!title || !date) {
     res.status(400).json({ error: "title and date are required" });
@@ -71,17 +70,17 @@ router.post("/", requirePermission("meetings.manage"), async (req: Request, res)
   }).catch(() => {});
 
   res.status(201).json(formatMeeting(meeting));
-});
+}));
 
-router.get("/:id", async (req, res) => {
+router.get("/:id", asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id as string, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
   const [meeting] = await db.select().from(meetingsTable).where(eq(meetingsTable.id, id));
   if (!meeting) { res.status(404).json({ error: "Not found" }); return; }
   res.json(formatMeeting(meeting));
-});
+}));
 
-router.patch("/:id", requirePermission("meetings.manage"), async (req: Request, res) => {
+router.patch("/:id", requirePermission("meetings.manage"), asyncHandler(async (req: Request, res) => {
   const id = parseInt(req.params.id as string, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
 
@@ -105,13 +104,13 @@ router.patch("/:id", requirePermission("meetings.manage"), async (req: Request, 
 
   if (!meeting) { res.status(404).json({ error: "Not found" }); return; }
   res.json(formatMeeting(meeting));
-});
+}));
 
-router.delete("/:id", requirePermission("meetings.manage"), async (req, res) => {
+router.delete("/:id", requirePermission("meetings.manage"), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id as string, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
   await db.delete(meetingsTable).where(eq(meetingsTable.id, id));
   res.status(204).end();
-});
+}));
 
 export default router;

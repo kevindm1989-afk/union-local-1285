@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from "express";
 import { db, membersTable, grievancesTable, announcementsTable, usersTable, disciplineRecordsTable } from "@workspace/db";
 import { eq, desc, asc } from "drizzle-orm";
 import { anthropic } from "@workspace/integrations-anthropic-ai";
+import { asyncHandler } from "../lib/asyncHandler";
 // @ts-ignore — .txt imported via esbuild text loader
 import cbaText from "../data/cba.txt";
 
@@ -37,7 +38,7 @@ function requireMemberRole(req: Request, res: Response, next: () => void) {
 /**
  * GET /member-portal/profile — get own member record (no sensitive admin fields)
  */
-router.get("/profile", requireMemberRole, async (req: Request, res: Response) => {
+router.get("/profile", requireMemberRole, asyncHandler(async (req: Request, res: Response) => {
   const memberId = req.session.linkedMemberId!;
   const [member] = await db
     .select({
@@ -65,12 +66,12 @@ router.get("/profile", requireMemberRole, async (req: Request, res: Response) =>
     return;
   }
   res.json(member);
-});
+}));
 
 /**
  * PATCH /member-portal/profile — update own phone/email only
  */
-router.patch("/profile", requireMemberRole, async (req: Request, res: Response) => {
+router.patch("/profile", requireMemberRole, asyncHandler(async (req: Request, res: Response) => {
   const memberId = req.session.linkedMemberId!;
   const { phone, email } = req.body ?? {};
 
@@ -94,12 +95,12 @@ router.patch("/profile", requireMemberRole, async (req: Request, res: Response) 
     });
 
   res.json(updated);
-});
+}));
 
 /**
  * GET /member-portal/grievances — own grievances (read-only, no steward notes)
  */
-router.get("/grievances", requireMemberRole, async (req: Request, res: Response) => {
+router.get("/grievances", requireMemberRole, asyncHandler(async (req: Request, res: Response) => {
   const memberId = req.session.linkedMemberId!;
   const grievances = await db
     .select({
@@ -118,12 +119,12 @@ router.get("/grievances", requireMemberRole, async (req: Request, res: Response)
     .where(eq(grievancesTable.memberId, memberId))
     .orderBy(desc(grievancesTable.filedDate));
   res.json(grievances);
-});
+}));
 
 /**
  * POST /member-portal/grievances — submit a new grievance (simplified form)
  */
-router.post("/grievances", requireMemberRole, async (req: Request, res: Response) => {
+router.post("/grievances", requireMemberRole, asyncHandler(async (req: Request, res: Response) => {
   const memberId = req.session.linkedMemberId!;
   const { description, dateOfIncident, accommodationRequest } = req.body ?? {};
 
@@ -162,12 +163,12 @@ router.post("/grievances", requireMemberRole, async (req: Request, res: Response
     });
 
   res.status(201).json(grievance);
-});
+}));
 
 /**
  * GET /member-portal/bulletins — bulletin feed (active announcements)
  */
-router.get("/bulletins", requireMemberRole, async (_req: Request, res: Response) => {
+router.get("/bulletins", requireMemberRole, asyncHandler(async (_req: Request, res: Response) => {
   const bulletins = await db
     .select({
       id: announcementsTable.id,
@@ -181,12 +182,12 @@ router.get("/bulletins", requireMemberRole, async (_req: Request, res: Response)
     .orderBy(desc(announcementsTable.publishedAt))
     .limit(50);
   res.json(bulletins);
-});
+}));
 
 /**
  * GET /member-portal/discipline — own discipline records (read-only)
  */
-router.get("/discipline", requireMemberRole, async (req: Request, res: Response) => {
+router.get("/discipline", requireMemberRole, asyncHandler(async (req: Request, res: Response) => {
   const memberId = req.session.linkedMemberId!;
   const records = await db
     .select({
@@ -203,12 +204,12 @@ router.get("/discipline", requireMemberRole, async (req: Request, res: Response)
     .where(eq(disciplineRecordsTable.memberId, memberId))
     .orderBy(asc(disciplineRecordsTable.incidentDate));
   res.json(records.map((r) => ({ ...r, createdAt: r.createdAt.toISOString() })));
-});
+}));
 
 /**
  * POST /member-portal/sign-card — save e-signature (union card signing)
  */
-router.post("/sign-card", requireMemberRole, async (req: Request, res: Response) => {
+router.post("/sign-card", requireMemberRole, asyncHandler(async (req: Request, res: Response) => {
   const memberId = req.session.linkedMemberId!;
   const { signatureData } = req.body ?? {};
 
@@ -236,11 +237,12 @@ router.post("/sign-card", requireMemberRole, async (req: Request, res: Response)
     });
 
   res.json({ ok: true, signedAt: updated.signedAt });
-});
+}));
 
 /**
  * POST /member-portal/ai/chat — stateless streaming CBA assistant for members
  * History is passed in-request and not persisted to the database.
+ * Has its own try/catch for streaming error handling.
  */
 router.post("/ai/chat", requireMemberRole, async (req: Request, res: Response) => {
   const { messages } = req.body ?? {};

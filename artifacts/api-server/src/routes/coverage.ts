@@ -1,7 +1,8 @@
 import { Router } from "express";
-import { db, stewardCoverageTable, usersTable, membersTable } from "@workspace/db";
+import { db, stewardCoverageTable, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { requireSteward } from "../lib/permissions";
+import { asyncHandler } from "../lib/asyncHandler";
 
 const router = Router();
 
@@ -21,13 +22,13 @@ async function fmt(c: typeof stewardCoverageTable.$inferSelect) {
   };
 }
 
-router.get("/", async (_req, res) => {
+router.get("/", asyncHandler(async (_req, res) => {
   const rows = await db.select().from(stewardCoverageTable).orderBy(stewardCoverageTable.department);
   const result = await Promise.all(rows.map(fmt));
   res.json(result);
-});
+}));
 
-router.post("/", async (req, res) => {
+router.post("/", asyncHandler(async (req, res) => {
   if (req.session?.role !== "admin" && req.session?.role !== "chair") {
     res.status(403).json({ error: "Admin only", code: "FORBIDDEN" }); return;
   }
@@ -42,13 +43,13 @@ router.post("/", async (req, res) => {
     areaNotes: (body.areaNotes as string) ?? null,
   }).returning();
   res.status(201).json(await fmt(c));
-});
+}));
 
-router.patch("/:id", async (req, res) => {
+router.patch("/:id", asyncHandler(async (req, res) => {
   if (req.session?.role !== "admin" && req.session?.role !== "chair") {
     res.status(403).json({ error: "Admin only", code: "FORBIDDEN" }); return;
   }
-  const id = parseInt(req.params.id, 10);
+  const id = parseInt(req.params.id as string, 10);
   const body = req.body as Record<string, unknown>;
   const updates: Record<string, unknown> = { updatedAt: new Date() };
   if (body.stewardId) updates.stewardId = Number(body.stewardId);
@@ -58,14 +59,14 @@ router.patch("/:id", async (req, res) => {
   const [c] = await db.update(stewardCoverageTable).set(updates).where(eq(stewardCoverageTable.id, id)).returning();
   if (!c) { res.status(404).json({ error: "Not found", code: "NOT_FOUND" }); return; }
   res.json(await fmt(c));
-});
+}));
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", asyncHandler(async (req, res) => {
   if (req.session?.role !== "admin" && req.session?.role !== "chair") {
     res.status(403).json({ error: "Admin only", code: "FORBIDDEN" }); return;
   }
-  await db.delete(stewardCoverageTable).where(eq(stewardCoverageTable.id, parseInt(req.params.id, 10)));
+  await db.delete(stewardCoverageTable).where(eq(stewardCoverageTable.id, parseInt(req.params.id as string, 10)));
   res.status(204).end();
-});
+}));
 
 export default router;

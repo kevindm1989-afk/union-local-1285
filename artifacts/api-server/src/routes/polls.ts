@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db, pollsTable, pollResponsesTable, usersTable } from "@workspace/db";
 import { eq, and, lte, gte, sql } from "drizzle-orm";
 import { sendPushToAll } from "./push";
+import { asyncHandler } from "../lib/asyncHandler";
 
 const router = Router();
 
@@ -21,7 +22,7 @@ function fmt(p: typeof pollsTable.$inferSelect) {
   };
 }
 
-router.get("/", async (req, res) => {
+router.get("/", asyncHandler(async (req, res) => {
   const role = req.session?.role ?? "member";
   const now = new Date();
   const polls = await db
@@ -54,9 +55,9 @@ router.get("/", async (req, res) => {
   }));
 
   res.json(withResponse);
-});
+}));
 
-router.post("/", async (req, res) => {
+router.post("/", asyncHandler(async (req, res) => {
   if (req.session?.role !== "admin" && req.session?.role !== "chair") {
     res.status(403).json({ error: "Admin only", code: "FORBIDDEN" }); return;
   }
@@ -83,10 +84,10 @@ router.post("/", async (req, res) => {
   }).catch(() => undefined);
 
   res.status(201).json(fmt(p));
-});
+}));
 
-router.post("/:id/respond", async (req, res) => {
-  const pollId = parseInt(req.params.id, 10);
+router.post("/:id/respond", asyncHandler(async (req, res) => {
+  const pollId = parseInt(req.params.id as string, 10);
   const userId = req.session?.userId;
   if (!userId) { res.status(401).json({ error: "Unauthenticated", code: "UNAUTHENTICATED" }); return; }
 
@@ -105,10 +106,10 @@ router.post("/:id/respond", async (req, res) => {
 
   await db.insert(pollResponsesTable).values({ pollId, userId, response });
   res.status(201).json({ ok: true });
-});
+}));
 
-router.get("/:id/results", async (req, res) => {
-  const pollId = parseInt(req.params.id, 10);
+router.get("/:id/results", asyncHandler(async (req, res) => {
+  const pollId = parseInt(req.params.id as string, 10);
   const role = req.session?.role ?? "member";
   const [poll] = await db.select().from(pollsTable).where(eq(pollsTable.id, pollId));
   if (!poll) { res.status(404).json({ error: "Poll not found", code: "NOT_FOUND" }); return; }
@@ -126,13 +127,13 @@ router.get("/:id/results", async (req, res) => {
 
   const total = responses.reduce((sum, r) => sum + r.count, 0);
   res.json({ poll: fmt(poll), total, results: responses });
-});
+}));
 
-router.patch("/:id", async (req, res) => {
+router.patch("/:id", asyncHandler(async (req, res) => {
   if (req.session?.role !== "admin" && req.session?.role !== "chair") {
     res.status(403).json({ error: "Admin only", code: "FORBIDDEN" }); return;
   }
-  const id = parseInt(req.params.id, 10);
+  const id = parseInt(req.params.id as string, 10);
   const body = req.body as Record<string, unknown>;
   const updates: Record<string, unknown> = {};
   if (body.isActive !== undefined) updates.isActive = Boolean(body.isActive);
@@ -140,6 +141,6 @@ router.patch("/:id", async (req, res) => {
   const [p] = await db.update(pollsTable).set(updates).where(eq(pollsTable.id, id)).returning();
   if (!p) { res.status(404).json({ error: "Not found", code: "NOT_FOUND" }); return; }
   res.json(fmt(p));
-});
+}));
 
 export default router;

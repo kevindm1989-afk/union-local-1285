@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db, onboardingChecklistsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { requireSteward } from "../lib/permissions";
+import { asyncHandler } from "../lib/asyncHandler";
 
 const router = Router({ mergeParams: true });
 
@@ -31,13 +32,13 @@ function fmt(c: typeof onboardingChecklistsTable.$inferSelect) {
   };
 }
 
-router.get("/", async (req, res) => {
+router.get("/", asyncHandler(async (req, res) => {
   const memberId = parseInt((req.params as Record<string, string>).memberId, 10);
   const [checklist] = await db.select().from(onboardingChecklistsTable).where(eq(onboardingChecklistsTable.memberId, memberId));
   res.json(checklist ? fmt(checklist) : null);
-});
+}));
 
-router.patch("/", async (req, res) => {
+router.patch("/", asyncHandler(async (req, res) => {
   const memberId = parseInt((req.params as Record<string, string>).memberId, 10);
   const userId = req.session?.userId;
   const body = req.body as Record<string, boolean | null | undefined>;
@@ -76,6 +77,6 @@ router.patch("/", async (req, res) => {
     result = c;
   }
   res.json(fmt(result));
-});
+}));
 
 export default router;

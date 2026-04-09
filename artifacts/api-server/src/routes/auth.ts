@@ -4,6 +4,7 @@ import { db, usersTable, accessRequestsTable, rolePermissionsTable } from "@work
 import { eq, and } from "drizzle-orm";
 import { ALL_PERMISSIONS, loadUserPermissions } from "../lib/seedAdmin";
 import { sendAccessRequestNotification } from "../lib/email";
+import { asyncHandler } from "../lib/asyncHandler";
 
 const router: IRouter = Router();
 
@@ -166,7 +167,7 @@ router.post("/auth/request-access", async (req: Request, res: Response) => {
 /**
  * GET /auth/access-requests — admin only: list pending requests
  */
-router.get("/auth/access-requests", async (req: Request, res: Response) => {
+router.get("/auth/access-requests", asyncHandler(async (req: Request, res: Response) => {
   if (!["admin", "chair"].includes(req.session.role ?? "")) {
     res.status(403).json({ error: "Admin access required" });
     return;
@@ -176,7 +177,7 @@ router.get("/auth/access-requests", async (req: Request, res: Response) => {
     .from(accessRequestsTable)
     .orderBy(accessRequestsTable.createdAt);
   res.json(requests);
-});
+}));
 
 /**
  * POST /auth/access-requests/:id/approve — admin only: approve and create user account
@@ -229,7 +230,7 @@ router.post("/auth/access-requests/:id/approve", async (req: Request, res: Respo
 /**
  * DELETE /auth/access-requests/:id — admin only: deny/remove a request
  */
-router.delete("/auth/access-requests/:id", async (req: Request, res: Response) => {
+router.delete("/auth/access-requests/:id", asyncHandler(async (req: Request, res: Response) => {
   if (!["admin", "chair"].includes(req.session.role ?? "")) {
     res.status(403).json({ error: "Admin access required" });
     return;
@@ -237,12 +238,12 @@ router.delete("/auth/access-requests/:id", async (req: Request, res: Response) =
   const id = Number(req.params.id);
   await db.delete(accessRequestsTable).where(eq(accessRequestsTable.id, id));
   res.json({ ok: true });
-});
+}));
 
 /**
  * GET /auth/users — admin only: list all users
  */
-router.get("/auth/users", async (req: Request, res: Response) => {
+router.get("/auth/users", asyncHandler(async (req: Request, res: Response) => {
   if (!["admin", "chair"].includes(req.session.role ?? "")) {
     res.status(403).json({ error: "Admin access required" });
     return;
@@ -264,7 +265,7 @@ router.get("/auth/users", async (req: Request, res: Response) => {
     ? await query.where(eq(usersTable.linkedMemberId, memberIdFilter))
     : await query.orderBy(usersTable.createdAt);
   res.json(users);
-});
+}));
 
 /**
  * POST /auth/users — admin only: create a new user manually
@@ -317,7 +318,7 @@ router.post("/auth/users", async (req: Request, res: Response) => {
 /**
  * PATCH /auth/users/:id — admin only: update user (toggle active, change role, reset password)
  */
-router.patch("/auth/users/:id", async (req: Request, res: Response) => {
+router.patch("/auth/users/:id", asyncHandler(async (req: Request, res: Response) => {
   if (!["admin", "chair"].includes(req.session.role ?? "")) {
     res.status(403).json({ error: "Admin access required" });
     return;
@@ -357,12 +358,12 @@ router.patch("/auth/users/:id", async (req: Request, res: Response) => {
     return;
   }
   res.json(updated);
-});
+}));
 
 /**
  * PATCH /auth/users/:id/role — admin only: change a user's role
  */
-router.patch("/auth/users/:id/role", async (req: Request, res: Response) => {
+router.patch("/auth/users/:id/role", asyncHandler(async (req: Request, res: Response) => {
   if (!["admin", "chair"].includes(req.session.role ?? "")) {
     res.status(403).json({ error: "Admin access required" });
     return;
@@ -382,12 +383,12 @@ router.patch("/auth/users/:id/role", async (req: Request, res: Response) => {
     .returning({ id: usersTable.id, username: usersTable.username, displayName: usersTable.displayName, role: usersTable.role });
   if (!user) { res.status(404).json({ error: "User not found" }); return; }
   res.json(user);
-});
+}));
 
 /**
  * GET /auth/roles/permissions — chair/admin only: get permissions for all configurable roles
  */
-router.get("/auth/roles/permissions", async (req: Request, res: Response) => {
+router.get("/auth/roles/permissions", asyncHandler(async (req: Request, res: Response) => {
   if (!["admin", "chair"].includes(req.session.role ?? "")) {
     res.status(403).json({ error: "Admin access required" });
     return;
@@ -399,12 +400,12 @@ router.get("/auth/roles/permissions", async (req: Request, res: Response) => {
     result[row.role][row.permission] = row.granted;
   }
   res.json({ allPermissions: ALL_PERMISSIONS, rolePermissions: result });
-});
+}));
 
 /**
  * DELETE /auth/users/:id — admin/chair only: permanently remove a user account
  */
-router.delete("/auth/users/:id", async (req: Request, res: Response) => {
+router.delete("/auth/users/:id", asyncHandler(async (req: Request, res: Response) => {
   if (!["admin", "chair"].includes(req.session.role ?? "")) {
     res.status(403).json({ error: "Admin access required" });
     return;
@@ -429,12 +430,12 @@ router.delete("/auth/users/:id", async (req: Request, res: Response) => {
   }
   await db.delete(usersTable).where(eq(usersTable.id, id));
   res.json({ ok: true });
-});
+}));
 
 /**
  * PATCH /auth/roles/permissions — chair/admin only: update a single permission for a role
  */
-router.patch("/auth/roles/permissions", async (req: Request, res: Response) => {
+router.patch("/auth/roles/permissions", asyncHandler(async (req: Request, res: Response) => {
   if (!["admin", "chair"].includes(req.session.role ?? "")) {
     res.status(403).json({ error: "Admin access required" });
     return;
@@ -460,6 +461,6 @@ router.patch("/auth/roles/permissions", async (req: Request, res: Response) => {
       set: { granted },
     });
   res.json({ ok: true });
-});
+}));
 
 export default router;

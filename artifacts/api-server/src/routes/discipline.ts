@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db, disciplineRecordsTable } from "@workspace/db";
 import { eq, and, asc } from "drizzle-orm";
 import { requireSteward } from "../lib/permissions";
+import { asyncHandler } from "../lib/asyncHandler";
 
 const router = Router({ mergeParams: true });
 
@@ -22,7 +23,7 @@ function fmt(r: typeof disciplineRecordsTable.$inferSelect) {
   };
 }
 
-router.get("/", async (req, res) => {
+router.get("/", asyncHandler(async (req, res) => {
   const memberId = parseInt((req.params as Record<string, string>).memberId, 10);
   const records = await db
     .select()
@@ -30,9 +31,9 @@ router.get("/", async (req, res) => {
     .where(eq(disciplineRecordsTable.memberId, memberId))
     .orderBy(asc(disciplineRecordsTable.incidentDate));
   res.json(records.map(fmt));
-});
+}));
 
-router.post("/", async (req, res) => {
+router.post("/", asyncHandler(async (req, res) => {
   const memberId = parseInt((req.params as Record<string, string>).memberId, 10);
   const body = req.body as Record<string, unknown>;
   if (!body.incidentDate || !body.issuedDate || !body.description) {
@@ -49,10 +50,10 @@ router.post("/", async (req, res) => {
     createdBy: req.session?.userId ?? null,
   }).returning();
   res.status(201).json(fmt(r));
-});
+}));
 
-router.patch("/:recordId", async (req, res) => {
-  const recordId = parseInt(req.params.recordId, 10);
+router.patch("/:recordId", asyncHandler(async (req, res) => {
+  const recordId = parseInt(req.params.recordId as string, 10);
   const memberId = parseInt((req.params as Record<string, string>).memberId, 10);
   const body = req.body as Record<string, unknown>;
   const updates: Record<string, unknown> = {};
@@ -65,13 +66,13 @@ router.patch("/:recordId", async (req, res) => {
   const [r] = await db.update(disciplineRecordsTable).set(updates).where(and(eq(disciplineRecordsTable.id, recordId), eq(disciplineRecordsTable.memberId, memberId))).returning();
   if (!r) { res.status(404).json({ error: "Not found", code: "NOT_FOUND" }); return; }
   res.json(fmt(r));
-});
+}));
 
-router.delete("/:recordId", async (req, res) => {
-  const recordId = parseInt(req.params.recordId, 10);
+router.delete("/:recordId", asyncHandler(async (req, res) => {
+  const recordId = parseInt(req.params.recordId as string, 10);
   const memberId = parseInt((req.params as Record<string, string>).memberId, 10);
   await db.delete(disciplineRecordsTable).where(and(eq(disciplineRecordsTable.id, recordId), eq(disciplineRecordsTable.memberId, memberId)));
   res.status(204).end();
-});
+}));
 
 export default router;

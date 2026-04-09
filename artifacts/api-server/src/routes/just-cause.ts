@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db, justCauseAssessmentsTable, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { requireSteward } from "../lib/permissions";
+import { asyncHandler } from "../lib/asyncHandler";
 
 const router = Router({ mergeParams: true });
 
@@ -24,16 +25,16 @@ function fmt(a: typeof justCauseAssessmentsTable.$inferSelect) {
   };
 }
 
-router.get("/", async (req, res) => {
+router.get("/", asyncHandler(async (req, res) => {
   const grievanceId = parseInt((req.params as Record<string, string>).grievanceId, 10);
   const [assessment] = await db
     .select()
     .from(justCauseAssessmentsTable)
     .where(eq(justCauseAssessmentsTable.grievanceId, grievanceId));
   res.json(assessment ? fmt(assessment) : null);
-});
+}));
 
-router.post("/", async (req, res) => {
+router.post("/", asyncHandler(async (req, res) => {
   const grievanceId = parseInt((req.params as Record<string, string>).grievanceId, 10);
   const userId = req.session?.userId;
   if (!userId) { res.status(401).json({ error: "Unauthenticated", code: "UNAUTHENTICATED" }); return; }
@@ -61,6 +62,6 @@ router.post("/", async (req, res) => {
     const [created] = await db.insert(justCauseAssessmentsTable).values(values).returning();
     res.status(201).json(fmt(created));
   }
-});
+}));
 
 export default router;

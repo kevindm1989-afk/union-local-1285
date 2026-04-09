@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db, grievanceTemplatesTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { requireSteward } from "../lib/permissions";
+import { asyncHandler } from "../lib/asyncHandler";
 
 const router = Router();
 
@@ -52,7 +53,7 @@ const STARTER_TEMPLATES = [
   },
 ];
 
-router.get("/", async (_req, res) => {
+router.get("/", asyncHandler(async (_req, res) => {
   const templates = await db
     .select()
     .from(grievanceTemplatesTable)
@@ -68,9 +69,9 @@ router.get("/", async (_req, res) => {
     createdBy: t.createdBy,
     createdAt: t.createdAt.toISOString(),
   })));
-});
+}));
 
-router.post("/", async (req, res) => {
+router.post("/", asyncHandler(async (req, res) => {
   if (req.session?.role !== "admin" && req.session?.role !== "chair") {
     res.status(403).json({ error: "Admin only", code: "FORBIDDEN" }); return;
   }
@@ -87,13 +88,13 @@ router.post("/", async (req, res) => {
     createdBy: req.session?.userId ?? null,
   }).returning();
   res.status(201).json(t);
-});
+}));
 
-router.patch("/:id", async (req, res) => {
+router.patch("/:id", asyncHandler(async (req, res) => {
   if (req.session?.role !== "admin" && req.session?.role !== "chair") {
     res.status(403).json({ error: "Admin only", code: "FORBIDDEN" }); return;
   }
-  const id = parseInt(req.params.id, 10);
+  const id = parseInt(req.params.id as string, 10);
   const { title, violationType, descriptionTemplate, contractArticle, defaultStep } = req.body as Record<string, unknown>;
   const updates: Record<string, unknown> = {};
   if (title) updates.title = title;
@@ -104,16 +105,16 @@ router.patch("/:id", async (req, res) => {
   const [t] = await db.update(grievanceTemplatesTable).set(updates).where(eq(grievanceTemplatesTable.id, id)).returning();
   if (!t) { res.status(404).json({ error: "Not found", code: "NOT_FOUND" }); return; }
   res.json(t);
-});
+}));
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", asyncHandler(async (req, res) => {
   if (req.session?.role !== "admin" && req.session?.role !== "chair") {
     res.status(403).json({ error: "Admin only", code: "FORBIDDEN" }); return;
   }
-  const id = parseInt(req.params.id, 10);
+  const id = parseInt(req.params.id as string, 10);
   await db.update(grievanceTemplatesTable).set({ isActive: false }).where(eq(grievanceTemplatesTable.id, id));
   res.status(204).end();
-});
+}));
 
 export { STARTER_TEMPLATES };
 export default router;

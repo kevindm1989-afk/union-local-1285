@@ -1,10 +1,11 @@
 import { Router } from "express";
 import { db, membersTable, grievancesTable, announcementsTable } from "@workspace/db";
 import { asc, desc, sql, and, notInArray, isNotNull, lte, gte } from "drizzle-orm";
+import { asyncHandler } from "../lib/asyncHandler";
 
 const router = Router();
 
-router.get("/summary", async (_req, res) => {
+router.get("/summary", asyncHandler(async (_req, res) => {
   const today = new Date().toISOString().split("T")[0];
   const firstOfMonth = new Date();
   firstOfMonth.setDate(1);
@@ -39,9 +40,9 @@ router.get("/summary", async (_req, res) => {
     grievancesThisMonth: grievanceStats.thisMonth,
     urgentAnnouncements: announcementStats.urgent,
   });
-});
+}));
 
-router.get("/recent-activity", async (_req, res) => {
+router.get("/recent-activity", asyncHandler(async (_req, res) => {
   const recentGrievances = await db
     .select()
     .from(grievancesTable)
@@ -84,9 +85,9 @@ router.get("/recent-activity", async (_req, res) => {
       updatedAt: a.updatedAt.toISOString(),
     })),
   });
-});
+}));
 
-router.get("/upcoming", async (_req, res) => {
+router.get("/upcoming", asyncHandler(async (_req, res) => {
   const today = new Date().toISOString().split("T")[0];
   const in14Days = new Date();
   in14Days.setDate(in14Days.getDate() + 14);
@@ -116,6 +117,6 @@ router.get("/upcoming", async (_req, res) => {
       isOverdue: g.dueDate != null && g.dueDate < today,
     })),
   );
-});
+}));
 
 export default router;

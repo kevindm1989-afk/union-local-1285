@@ -3,6 +3,7 @@ import webpush from "web-push";
 import { db, pushSubscriptionsTable, pool } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { logger } from "../lib/logger";
+import { asyncHandler } from "../lib/asyncHandler";
 
 const router = Router();
 
@@ -70,17 +71,17 @@ export async function sendPushToAll(payload: { title: string; body: string; tag?
 }
 
 // GET /api/push/vapid-public-key — return public key for frontend subscription
-router.get("/vapid-public-key", async (_req, res) => {
+router.get("/vapid-public-key", asyncHandler(async (_req, res) => {
   const keys = await getVapidKeys();
   if (!keys) {
     res.status(503).json({ error: "Push notifications not configured" });
     return;
   }
   res.json({ publicKey: keys.publicKey });
-});
+}));
 
 // POST /api/push/subscribe — save subscription
-router.post("/subscribe", async (req: Request, res) => {
+router.post("/subscribe", asyncHandler(async (req: Request, res) => {
   const { endpoint, keys } = req.body;
   if (!endpoint || !keys?.p256dh || !keys?.auth) {
     res.status(400).json({ error: "endpoint and keys (p256dh, auth) are required" });
@@ -100,20 +101,20 @@ router.post("/subscribe", async (req: Request, res) => {
     });
 
   res.status(201).json({ ok: true });
-});
+}));
 
 // DELETE /api/push/subscribe — remove subscription
-router.delete("/subscribe", async (req: Request, res) => {
+router.delete("/subscribe", asyncHandler(async (req: Request, res) => {
   const { endpoint } = req.body;
   if (!endpoint) { res.status(400).json({ error: "endpoint required" }); return; }
   await db
     .delete(pushSubscriptionsTable)
     .where(eq(pushSubscriptionsTable.endpoint, endpoint));
   res.json({ ok: true });
-});
+}));
 
 // POST /api/push/send — admin sends custom notification
-router.post("/send", async (req: Request, res) => {
+router.post("/send", asyncHandler(async (req: Request, res) => {
   if (!["admin", "chair"].includes(req.session?.role ?? "")) {
     res.status(403).json({ error: "Admin only" });
     return;
@@ -123,6 +124,6 @@ router.post("/send", async (req: Request, res) => {
 
   sendPushToAll({ title, body, url }).catch(() => {});
   res.json({ ok: true, message: "Notifications queued" });
-});
+}));
 
 export default router;

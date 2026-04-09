@@ -1,10 +1,11 @@
 import { Router, type Request, type Response } from "express";
 import { db, localSettingsTable } from "@workspace/db";
 import { inArray } from "drizzle-orm";
+import { asyncHandler } from "../lib/asyncHandler";
 
 const router = Router();
 
-router.get("/", async (_req: Request, res: Response) => {
+router.get("/", asyncHandler(async (_req: Request, res: Response) => {
   const rows = await db
     .select()
     .from(localSettingsTable)
@@ -15,6 +16,6 @@ router.get("/", async (_req: Request, res: Response) => {
     result[row.key] = row.value;
   }
   res.json(result);
-});
+}));
 
 export default router;

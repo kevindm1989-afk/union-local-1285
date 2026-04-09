@@ -2,10 +2,11 @@ import { Router } from "express";
 import { db, grievanceNotesTable, usersTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
 import { requirePermission } from "../lib/permissions";
+import { asyncHandler } from "../lib/asyncHandler";
 
 const router = Router({ mergeParams: true });
 
-router.get("/", async (req, res) => {
+router.get("/", asyncHandler(async (req, res) => {
   const grievanceId = Number((req.params as Record<string, string>).grievanceId);
   if (isNaN(grievanceId)) {
     res.status(400).json({ error: "Invalid grievance ID" });
@@ -29,9 +30,9 @@ router.get("/", async (req, res) => {
       createdAt: n.createdAt.toISOString(),
     })),
   );
-});
+}));
 
-router.post("/", requirePermission("grievances.file"), async (req, res) => {
+router.post("/", requirePermission("grievances.file"), asyncHandler(async (req, res) => {
   const grievanceId = Number((req.params as Record<string, string>).grievanceId);
   if (isNaN(grievanceId)) {
     res.status(400).json({ error: "Invalid grievance ID" });
@@ -74,6 +75,6 @@ router.post("/", requirePermission("grievances.file"), async (req, res) => {
     noteType: note.noteType,
     createdAt: note.createdAt.toISOString(),
   });
-});
+}));
 
 export default router;

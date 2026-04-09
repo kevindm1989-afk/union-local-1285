@@ -2,12 +2,13 @@ import { Router } from "express";
 import { db, grievancesTable, membersTable } from "@workspace/db";
 import { sql, desc } from "drizzle-orm";
 import { requireSteward } from "../lib/permissions";
+import { asyncHandler } from "../lib/asyncHandler";
 
 const router = Router();
 
 router.use(requireSteward);
 
-router.get("/overview", async (_req, res) => {
+router.get("/overview", asyncHandler(async (_req, res) => {
   const today = new Date().toISOString().split("T")[0];
 
   // Status counts
@@ -66,6 +67,6 @@ router.get("/overview", async (_req, res) => {
     avgDaysToResolution: avgResolution.rows,
     monthlyTrend: monthlyTrend.rows,
   });
-});
+}));
 
 export default router;

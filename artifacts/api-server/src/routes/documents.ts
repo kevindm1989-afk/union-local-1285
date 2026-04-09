@@ -2,6 +2,7 @@ import { Router, type Request } from "express";
 import { db, documentsTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
 import { requirePermission } from "../lib/permissions";
+import { asyncHandler } from "../lib/asyncHandler";
 
 const router = Router();
 
@@ -28,7 +29,7 @@ function formatDocument(d: typeof documentsTable.$inferSelect) {
   };
 }
 
-router.get("/", async (req: Request, res) => {
+router.get("/", asyncHandler(async (req: Request, res) => {
   const { category } = req.query;
   const docs = await db
     .select()
@@ -38,9 +39,9 @@ router.get("/", async (req: Request, res) => {
       : undefined)
     .orderBy(desc(documentsTable.uploadedAt));
   res.json(docs.map(formatDocument));
-});
+}));
 
-router.post("/", requirePermission("documents.upload"), async (req: Request, res) => {
+router.post("/", requirePermission("documents.upload"), asyncHandler(async (req: Request, res) => {
   const { title, category, description, filename, objectPath, contentType, fileSize, isCurrent, effectiveDate, expirationDate, notes } = req.body;
 
   if (!title || !filename || !objectPath || !contentType) {
@@ -73,18 +74,18 @@ router.post("/", requirePermission("documents.upload"), async (req: Request, res
     .returning();
 
   res.status(201).json(formatDocument(doc));
-});
+}));
 
-router.get("/:id", async (req, res) => {
+router.get("/:id", asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id as string, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
 
   const [doc] = await db.select().from(documentsTable).where(eq(documentsTable.id, id));
   if (!doc) { res.status(404).json({ error: "Not found" }); return; }
   res.json(formatDocument(doc));
-});
+}));
 
-router.patch("/:id", requirePermission("documents.upload"), async (req, res) => {
+router.patch("/:id", requirePermission("documents.upload"), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id as string, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
 
@@ -101,13 +102,13 @@ router.patch("/:id", requirePermission("documents.upload"), async (req, res) => 
   const [doc] = await db.update(documentsTable).set(updates).where(eq(documentsTable.id, id)).returning();
   if (!doc) { res.status(404).json({ error: "Not found" }); return; }
   res.json(formatDocument(doc));
-});
+}));
 
-router.delete("/:id", requirePermission("documents.upload"), async (req, res) => {
+router.delete("/:id", requirePermission("documents.upload"), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id as string, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
   await db.delete(documentsTable).where(eq(documentsTable.id, id));
   res.status(204).end();
-});
+}));
 
 export default router;

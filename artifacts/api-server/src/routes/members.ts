@@ -6,6 +6,7 @@ import { sendMemberDeactivatedEmail } from "../lib/email";
 import { requirePermission } from "../lib/permissions";
 import { storageUpload } from "../lib/storageAdapter";
 import { logAudit } from "../lib/auditLog";
+import { asyncHandler } from "../lib/asyncHandler";
 import {
   CreateMemberBody,
   UpdateMemberBody,
@@ -20,7 +21,7 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 
 
 const router = Router();
 
-router.get("/", async (req, res) => {
+router.get("/", asyncHandler(async (req, res) => {
   const parsed = ListMembersQueryParams.safeParse(req.query);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid query params" });
@@ -48,9 +49,9 @@ router.get("/", async (req, res) => {
     .orderBy(membersTable.name);
 
   res.json(members.map(formatMember));
-});
+}));
 
-router.post("/", requirePermission("members.edit"), async (req, res) => {
+router.post("/", requirePermission("members.edit"), asyncHandler(async (req, res) => {
   const parsed = CreateMemberBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid body" });
@@ -81,9 +82,9 @@ router.post("/", requirePermission("members.edit"), async (req, res) => {
 
   await logAudit(req, "create", "member", member.id, null, formatMember(member));
   res.status(201).json(formatMember(member));
-});
+}));
 
-router.get("/:id/grievances", async (req, res) => {
+router.get("/:id/grievances", asyncHandler(async (req, res) => {
   const parsed = GetMemberGrievancesParams.safeParse({ id: Number(req.params.id) });
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid ID" });
@@ -107,9 +108,9 @@ router.get("/:id/grievances", async (req, res) => {
     .orderBy(desc(grievancesTable.filedDate));
 
   res.json(grievances.map((g) => formatGrievanceWithMember(g, member.name)));
-});
+}));
 
-router.get("/:id", async (req, res) => {
+router.get("/:id", asyncHandler(async (req, res) => {
   const parsed = GetMemberParams.safeParse({ id: Number(req.params.id) });
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid ID" });
@@ -127,9 +128,9 @@ router.get("/:id", async (req, res) => {
   }
 
   res.json(formatMember(member));
-});
+}));
 
-router.patch("/:id", requirePermission("members.edit"), async (req, res) => {
+router.patch("/:id", requirePermission("members.edit"), asyncHandler(async (req, res) => {
   const paramParsed = UpdateMemberParams.safeParse({ id: Number(req.params.id) });
   if (!paramParsed.success) {
     res.status(400).json({ error: "Invalid ID" });
@@ -180,9 +181,9 @@ router.patch("/:id", requirePermission("members.edit"), async (req, res) => {
     await logAudit(req, "update", "member", member.id, formatMember(existing), formatMember(member));
   }
   res.json(formatMember(member));
-});
+}));
 
-router.delete("/:id", requirePermission("members.edit"), async (req, res) => {
+router.delete("/:id", requirePermission("members.edit"), asyncHandler(async (req, res) => {
   const parsed = DeleteMemberParams.safeParse({ id: Number(req.params.id) });
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid ID" });
@@ -204,10 +205,10 @@ router.delete("/:id", requirePermission("members.edit"), async (req, res) => {
   }
   await db.delete(membersTable).where(eq(membersTable.id, parsed.data.id));
   res.status(204).end();
-});
+}));
 
 // ─── Deactivate member ────────────────────────────────────────────────────────
-router.patch("/:id/deactivate", requirePermission("members.edit"), async (req, res) => {
+router.patch("/:id/deactivate", requirePermission("members.edit"), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id as string, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
 
@@ -236,10 +237,10 @@ router.patch("/:id/deactivate", requirePermission("members.edit"), async (req, r
 
   await logAudit(req, "update", "member", id, { isActive: true }, { isActive: false });
   res.json(formatMember(updated));
-});
+}));
 
 // ─── Reactivate member ────────────────────────────────────────────────────────
-router.patch("/:id/reactivate", requirePermission("members.edit"), async (req, res) => {
+router.patch("/:id/reactivate", requirePermission("members.edit"), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id as string, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
 
@@ -265,7 +266,7 @@ router.patch("/:id/reactivate", requirePermission("members.edit"), async (req, r
 
   await logAudit(req, "update", "member", id, { isActive: false }, { isActive: true });
   res.json(formatMember(updated));
-});
+}));
 
 function formatMember(m: typeof membersTable.$inferSelect) {
   return {
@@ -318,7 +319,7 @@ function formatGrievanceWithMember(
 
 // ─── Member Files ──────────────────────────────────────────────────────────
 
-router.get("/:id/files", async (req, res) => {
+router.get("/:id/files", asyncHandler(async (req, res) => {
   const memberId = parseInt(req.params.id as string, 10);
   if (isNaN(memberId)) { res.status(400).json({ error: "Invalid ID" }); return; }
 
@@ -342,7 +343,7 @@ router.get("/:id/files", async (req, res) => {
     description: f.description ?? null,
     uploadedAt: f.uploadedAt.toISOString(),
   })));
-});
+}));
 
 router.post(
   "/:id/files",
@@ -396,7 +397,7 @@ router.post(
   },
 );
 
-router.delete("/:id/files/:fileId", requirePermission("members.edit"), async (req, res) => {
+router.delete("/:id/files/:fileId", requirePermission("members.edit"), asyncHandler(async (req, res) => {
   const memberId = parseInt(req.params.id as string, 10);
   const fileId = parseInt(req.params.fileId as string, 10);
   if (isNaN(memberId) || isNaN(fileId)) { res.status(400).json({ error: "Invalid ID" }); return; }
@@ -409,6 +410,6 @@ router.delete("/:id/files/:fileId", requirePermission("members.edit"), async (re
 
   await db.delete(memberFilesTable).where(eq(memberFilesTable.id, fileId));
   res.status(204).end();
-});
+}));
 
 export default router;

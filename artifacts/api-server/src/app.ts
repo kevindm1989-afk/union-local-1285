@@ -108,4 +108,15 @@ if (process.env.NODE_ENV === "production") {
     res.sendFile(path.join(publicDir, "index.html"));
   });
 }
+
+// ─── Global error handler ─────────────────────────────────────────────────────
+// Catches any error forwarded via next(err) — including those from asyncHandler.
+// Must be the last middleware registered.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  logger.error({ err }, "Unhandled route error");
+  if (res.headersSent) return;
+  res.status(500).json({ error: "Internal server error", code: "INTERNAL_ERROR" });
+});
+
 export default app;

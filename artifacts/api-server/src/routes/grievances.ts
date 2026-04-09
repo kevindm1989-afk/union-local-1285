@@ -15,6 +15,7 @@ import {
   UpdateGrievanceParams,
   DeleteGrievanceParams,
 } from "@workspace/api-zod";
+import { asyncHandler } from "../lib/asyncHandler";
 
 const router = Router();
 
@@ -86,7 +87,7 @@ function generateGrievanceNumber(): string {
 
 // ─── routes ───────────────────────────────────────────────────────────────────
 
-router.get("/", async (req, res) => {
+router.get("/", asyncHandler(async (req, res) => {
   const parsed = ListGrievancesQueryParams.safeParse(req.query);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid query params" });
@@ -113,9 +114,9 @@ router.get("/", async (req, res) => {
   );
 
   res.json(withNames);
-});
+}));
 
-router.post("/", requirePermission("grievances.file"), async (req, res) => {
+router.post("/", requirePermission("grievances.file"), asyncHandler(async (req, res) => {
   const parsed = CreateGrievanceBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid body" });
@@ -166,9 +167,9 @@ router.post("/", requirePermission("grievances.file"), async (req, res) => {
   }).catch(() => undefined);
 
   res.status(201).json(formatGrievance(grievance, memberName));
-});
+}));
 
-router.get("/stats/summary", async (_req, res) => {
+router.get("/stats/summary", asyncHandler(async (_req, res) => {
   const today = new Date().toISOString().split("T")[0];
 
   const [row] = await db
@@ -190,9 +191,9 @@ router.get("/stats/summary", async (_req, res) => {
     .from(grievancesTable);
 
   res.json(row);
-});
+}));
 
-router.get("/:id", async (req, res) => {
+router.get("/:id", asyncHandler(async (req, res) => {
   const parsed = GetGrievanceParams.safeParse({ id: Number(req.params.id) });
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid ID" });
@@ -211,9 +212,9 @@ router.get("/:id", async (req, res) => {
 
   const memberName = await lookupMemberName(grievance.memberId);
   res.json(formatGrievance(grievance, memberName));
-});
+}));
 
-router.patch("/:id", requirePermission("grievances.file"), async (req, res) => {
+router.patch("/:id", requirePermission("grievances.file"), asyncHandler(async (req, res) => {
   const paramParsed = UpdateGrievanceParams.safeParse({ id: Number(req.params.id) });
   if (!paramParsed.success) {
     res.status(400).json({ error: "Invalid ID" });
@@ -328,9 +329,9 @@ router.patch("/:id", requirePermission("grievances.file"), async (req, res) => {
   }
 
   res.json(formatGrievance(grievance, memberName));
-});
+}));
 
-router.delete("/:id", requirePermission("grievances.manage"), async (req, res) => {
+router.delete("/:id", requirePermission("grievances.manage"), asyncHandler(async (req, res) => {
   const parsed = DeleteGrievanceParams.safeParse({ id: Number(req.params.id) });
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid ID" });
@@ -348,6 +349,6 @@ router.delete("/:id", requirePermission("grievances.manage"), async (req, res) =
 
   await db.delete(grievancesTable).where(eq(grievancesTable.id, parsed.data.id));
   res.status(204).end();
-});
+}));
 
 export default router;

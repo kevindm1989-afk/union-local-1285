@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db, memberCommunicationLogTable, usersTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
 import { requireSteward } from "../lib/permissions";
+import { asyncHandler } from "../lib/asyncHandler";
 
 const router = Router({ mergeParams: true });
 
@@ -21,7 +22,7 @@ function fmt(e: typeof memberCommunicationLogTable.$inferSelect) {
   };
 }
 
-router.get("/", async (req, res) => {
+router.get("/", asyncHandler(async (req, res) => {
   const grievanceId = parseInt((req.params as Record<string, string>).grievanceId, 10);
   const entries = await db
     .select()
@@ -29,9 +30,9 @@ router.get("/", async (req, res) => {
     .where(eq(memberCommunicationLogTable.grievanceId, grievanceId))
     .orderBy(desc(memberCommunicationLogTable.contactDate));
   res.json(entries.map(fmt));
-});
+}));
 
-router.post("/", async (req, res) => {
+router.post("/", asyncHandler(async (req, res) => {
   const grievanceId = parseInt((req.params as Record<string, string>).grievanceId, 10);
   const userId = req.session?.userId;
   if (!userId) { res.status(401).json({ error: "Unauthenticated", code: "UNAUTHENTICATED" }); return; }
@@ -53,6 +54,6 @@ router.post("/", async (req, res) => {
   }).returning();
 
   res.status(201).json(fmt(entry));
-});
+}));
 
 export default router;

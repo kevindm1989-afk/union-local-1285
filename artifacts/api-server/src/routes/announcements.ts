@@ -11,10 +11,11 @@ import {
   UpdateAnnouncementParams,
   DeleteAnnouncementParams,
 } from "@workspace/api-zod";
+import { asyncHandler } from "../lib/asyncHandler";
 
 const router = Router();
 
-router.get("/", async (req, res) => {
+router.get("/", asyncHandler(async (req, res) => {
   const parsed = ListAnnouncementsQueryParams.safeParse(req.query);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid query params" });
@@ -29,9 +30,9 @@ router.get("/", async (req, res) => {
     .orderBy(desc(announcementsTable.publishedAt));
 
   res.json(announcements.map(formatAnnouncement));
-});
+}));
 
-router.post("/", requirePermission("bulletins.post"), async (req, res) => {
+router.post("/", requirePermission("bulletins.post"), asyncHandler(async (req, res) => {
   const parsed = CreateAnnouncementBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid body" });
@@ -54,9 +55,9 @@ router.post("/", requirePermission("bulletins.post"), async (req, res) => {
   }
 
   res.status(201).json(formatAnnouncement(announcement));
-});
+}));
 
-router.get("/:id", async (req, res) => {
+router.get("/:id", asyncHandler(async (req, res) => {
   const parsed = GetAnnouncementParams.safeParse({ id: Number(req.params.id) });
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid ID" });
@@ -74,9 +75,9 @@ router.get("/:id", async (req, res) => {
   }
 
   res.json(formatAnnouncement(announcement));
-});
+}));
 
-router.patch("/:id", requirePermission("bulletins.manage"), async (req, res) => {
+router.patch("/:id", requirePermission("bulletins.manage"), asyncHandler(async (req, res) => {
   const paramParsed = UpdateAnnouncementParams.safeParse({ id: Number(req.params.id) });
   if (!paramParsed.success) {
     res.status(400).json({ error: "Invalid ID" });
@@ -108,9 +109,9 @@ router.patch("/:id", requirePermission("bulletins.manage"), async (req, res) => 
   }
 
   res.json(formatAnnouncement(announcement));
-});
+}));
 
-router.delete("/:id", requirePermission("bulletins.manage"), async (req, res) => {
+router.delete("/:id", requirePermission("bulletins.manage"), asyncHandler(async (req, res) => {
   const parsed = DeleteAnnouncementParams.safeParse({ id: Number(req.params.id) });
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid ID" });
@@ -119,7 +120,7 @@ router.delete("/:id", requirePermission("bulletins.manage"), async (req, res) =>
 
   await db.delete(announcementsTable).where(eq(announcementsTable.id, parsed.data.id));
   res.status(204).end();
-});
+}));
 
 function formatAnnouncement(a: typeof announcementsTable.$inferSelect) {
   return {

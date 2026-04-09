@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db, caseJournalTable, usersTable } from "@workspace/db";
 import { eq, and, desc } from "drizzle-orm";
 import { requireSteward } from "../lib/permissions";
+import { asyncHandler } from "../lib/asyncHandler";
 
 const router = Router({ mergeParams: true });
 
@@ -21,7 +22,7 @@ function fmt(e: typeof caseJournalTable.$inferSelect) {
   };
 }
 
-router.get("/", async (req, res) => {
+router.get("/", asyncHandler(async (req, res) => {
   const grievanceId = parseInt((req.params as Record<string, string>).grievanceId, 10);
   const entries = await db
     .select()
@@ -29,9 +30,9 @@ router.get("/", async (req, res) => {
     .where(eq(caseJournalTable.grievanceId, grievanceId))
     .orderBy(desc(caseJournalTable.createdAt));
   res.json(entries.map(fmt));
-});
+}));
 
-router.post("/", async (req, res) => {
+router.post("/", asyncHandler(async (req, res) => {
   const grievanceId = parseInt((req.params as Record<string, string>).grievanceId, 10);
   const authorId = req.session?.userId;
   if (!authorId) { res.status(401).json({ error: "Unauthenticated", code: "UNAUTHENTICATED" }); return; }
@@ -53,10 +54,10 @@ router.post("/", async (req, res) => {
   }).returning();
 
   res.status(201).json(fmt(entry));
-});
+}));
 
-router.patch("/:entryId", async (req, res) => {
-  const entryId = parseInt(req.params.entryId, 10);
+router.patch("/:entryId", asyncHandler(async (req, res) => {
+  const entryId = parseInt(req.params.entryId as string, 10);
   const userId = req.session?.userId;
   const [existing] = await db.select().from(caseJournalTable).where(eq(caseJournalTable.id, entryId));
   if (!existing) { res.status(404).json({ error: "Not found", code: "NOT_FOUND" }); return; }
@@ -69,10 +70,10 @@ router.patch("/:entryId", async (req, res) => {
   if (entryType) updates.entryType = entryType;
   const [updated] = await db.update(caseJournalTable).set(updates).where(eq(caseJournalTable.id, entryId)).returning();
   res.json(fmt(updated));
-});
+}));
 
-router.delete("/:entryId", async (req, res) => {
-  const entryId = parseInt(req.params.entryId, 10);
+router.delete("/:entryId", asyncHandler(async (req, res) => {
+  const entryId = parseInt(req.params.entryId as string, 10);
   const userId = req.session?.userId;
   const [existing] = await db.select().from(caseJournalTable).where(eq(caseJournalTable.id, entryId));
   if (!existing) { res.status(404).json({ error: "Not found", code: "NOT_FOUND" }); return; }
@@ -81,6 +82,6 @@ router.delete("/:entryId", async (req, res) => {
   }
   await db.delete(caseJournalTable).where(and(eq(caseJournalTable.id, entryId)));
   res.status(204).end();
-});
+}));
 
 export default router;

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { db, localSettingsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { asyncHandler } from "../lib/asyncHandler";
 
 const router = Router();
 
@@ -16,16 +17,16 @@ const ALLOWED_KEYS = [
   "cba_name",
 ] as const;
 
-router.get("/", async (_req, res) => {
+router.get("/", asyncHandler(async (_req, res) => {
   const rows = await db.select().from(localSettingsTable);
   const map: Record<string, { value: string; description: string | null }> = {};
   for (const row of rows) {
     map[row.key] = { value: row.value, description: row.description ?? null };
   }
   res.json(map);
-});
+}));
 
-router.patch("/", async (req, res) => {
+router.patch("/", asyncHandler(async (req, res) => {
   const updates = req.body as Record<string, string>;
   if (typeof updates !== "object" || Array.isArray(updates)) {
     res.status(400).json({ error: "Body must be an object of key→value strings" });
@@ -58,6 +59,6 @@ router.patch("/", async (req, res) => {
   }
 
   res.json({ updated: results });
-});
+}));
 
 export default router;

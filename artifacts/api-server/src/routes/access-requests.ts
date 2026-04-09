@@ -10,6 +10,7 @@ import {
   sendAccessRequestApprovedEmail,
   sendAccessRequestRejectedEmail,
 } from "../lib/email";
+import { asyncHandler } from "../lib/asyncHandler";
 
 const router = Router();
 
@@ -60,7 +61,7 @@ const CreateRequestSchema = z.object({
 );
 
 // ─── POST /api/access-requests — public, rate-limited ────────────────────────
-router.post("/", accessRequestRateLimit, async (req: Request, res: Response) => {
+router.post("/", accessRequestRateLimit, asyncHandler(async (req: Request, res: Response) => {
   const parsed = CreateRequestSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(422).json({ error: "Invalid request data", code: "VALIDATION_ERROR", details: parsed.error.issues });
@@ -160,10 +161,10 @@ router.post("/", accessRequestRateLimit, async (req: Request, res: Response) => 
     department: d.department ?? null,
     requestedRole: d.requestedRole,
   }).catch(() => {});
-});
+}));
 
 // ─── GET /api/access-requests — admin only ────────────────────────────────────
-router.get("/", async (req: Request, res: Response) => {
+router.get("/", asyncHandler(async (req: Request, res: Response) => {
   if (!requireAdmin(req, res)) return;
 
   const status = typeof req.query.status === "string" ? req.query.status : undefined;
@@ -206,10 +207,10 @@ router.get("/", async (req: Request, res: Response) => {
     createdAt: r.createdAt.toISOString(),
     reviewerName: r.reviewedBy ? userMap[r.reviewedBy] ?? null : null,
   })));
-});
+}));
 
 // ─── GET /api/access-requests/:id — admin only ───────────────────────────────
-router.get("/:id", async (req: Request, res: Response) => {
+router.get("/:id", asyncHandler(async (req: Request, res: Response) => {
   if (!requireAdmin(req, res)) return;
   const id = parseInt(req.params.id as string, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID", code: "INVALID_ID" }); return; }
@@ -218,10 +219,10 @@ router.get("/:id", async (req: Request, res: Response) => {
   if (!request) { res.status(404).json({ error: "Not found", code: "NOT_FOUND" }); return; }
 
   res.json({ ...request, reviewedAt: request.reviewedAt?.toISOString() ?? null, createdAt: request.createdAt.toISOString() });
-});
+}));
 
 // ─── PATCH /api/access-requests/:id/approve — admin only ─────────────────────
-router.patch("/:id/approve", async (req: Request, res: Response) => {
+router.patch("/:id/approve", asyncHandler(async (req: Request, res: Response) => {
   if (!requireAdmin(req, res)) return;
   const id = parseInt(req.params.id as string, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID", code: "INVALID_ID" }); return; }
@@ -318,10 +319,10 @@ router.patch("/:id/approve", async (req: Request, res: Response) => {
       requestedRole,
     }).catch(() => {});
   }
-});
+}));
 
 // ─── PATCH /api/access-requests/:id/reject — admin only ──────────────────────
-router.patch("/:id/reject", async (req: Request, res: Response) => {
+router.patch("/:id/reject", asyncHandler(async (req: Request, res: Response) => {
   if (!requireAdmin(req, res)) return;
   const id = parseInt(req.params.id as string, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID", code: "INVALID_ID" }); return; }
@@ -351,10 +352,10 @@ router.patch("/:id/reject", async (req: Request, res: Response) => {
       rejectionReason: rejectionReason.trim(),
     }).catch(() => {});
   }
-});
+}));
 
 // ─── DELETE /api/access-requests/:id — admin only, pending only ───────────────
-router.delete("/:id", async (req: Request, res: Response) => {
+router.delete("/:id", asyncHandler(async (req: Request, res: Response) => {
   if (!requireAdmin(req, res)) return;
   const id = parseInt(req.params.id as string, 10);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid ID", code: "INVALID_ID" }); return; }
@@ -365,6 +366,6 @@ router.delete("/:id", async (req: Request, res: Response) => {
 
   await db.delete(accessRequestsTable).where(eq(accessRequestsTable.id, id));
   res.status(204).end();
-});
+}));
 
 export default router;
