@@ -6,9 +6,24 @@ primary_region = "ord"
 [env]
   PORT = "8080"
   NODE_ENV = "production"
-  # ADMIN_PASSWORD must be set as a Fly secret — never committed here.
-  # Run once after deploy: fly secrets set ADMIN_PASSWORD=<strong-random-value>
-  # ADMIN_USERNAME defaults to "admin" if not set (also injectable as a secret).
+  # Required secrets — set via: fly secrets set KEY=value
+  # DATABASE_URL
+  # SESSION_SECRET
+  # ANTHROPIC_API_KEY
+  # ADMIN_PASSWORD
+  # RESEND_API_KEY
+  # PORTAL_URL
+  # EMAIL_FROM
+  # Optional — SMS disabled if missing:
+  # TWILIO_ACCOUNT_SID
+  # TWILIO_AUTH_TOKEN
+  # TWILIO_FROM
+  # Optional — S3 storage falls back to local disk if missing:
+  # AWS_ACCESS_KEY_ID
+  # AWS_SECRET_ACCESS_KEY
+  # BUCKET_NAME
+  # AWS_ENDPOINT_URL_S3
+  # AWS_REGION
 
 [http_service]
   internal_port = 8080

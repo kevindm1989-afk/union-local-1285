@@ -34,8 +34,11 @@ function getS3Client(): S3Client {
     endpoint: process.env.AWS_ENDPOINT_URL_S3,
     region: process.env.AWS_REGION ?? "auto",
     credentials: {
-      accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+      accessKeyId: (() => {
+        if (!process.env.AWS_ACCESS_KEY_ID) throw new Error('AWS_ACCESS_KEY_ID is not configured');
+        return process.env.AWS_ACCESS_KEY_ID;
+      })(),
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? '',
     },
     forcePathStyle: false,
   });

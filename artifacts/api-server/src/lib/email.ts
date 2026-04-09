@@ -36,8 +36,7 @@ async function getResendClient(): Promise<{ client: Resend; from: string } | nul
 
     const fromEmail: string =
       data.settings.from_email ||
-      process.env.EMAIL_FROM ||
-      "noreply@union-local-1285.fly.dev";
+      process.env.EMAIL_FROM;
 
     return { client: new Resend(data.settings.api_key), from: fromEmail };
   } catch (err) {
@@ -101,7 +100,7 @@ export async function sendAccessRequestNotification(opts: {
     return;
   }
 
-  const portalUrl = process.env.PORTAL_URL ?? "https://union-local-1285.fly.dev";
+  const portalUrl = process.env.PORTAL_URL;
 
   await send({
     to: adminEmail,
@@ -163,7 +162,7 @@ export async function sendAccessRequestApprovedEmail(opts: {
   approvedRole?: string;
   requestedRole?: string;
 }): Promise<void> {
-  const portalUrl = process.env.PORTAL_URL ?? "https://union-local-1285.fly.dev";
+  const portalUrl = process.env.PORTAL_URL;
   const roleDiffers = opts.approvedRole && opts.requestedRole && opts.approvedRole !== opts.requestedRole;
   const roleLabel = (r: string) =>
     r === "co_chair" ? "Co-Chair" : r === "steward" ? "Steward" : r === "admin" ? "Administrator" : "Member";
@@ -272,7 +271,7 @@ export async function sendNewMemberRequestNotification(opts: {
 }): Promise<void> {
   const adminEmail = await getAdminEmail();
   if (!adminEmail) return;
-  const portalUrl = process.env.PORTAL_URL ?? "https://union-local-1285.fly.dev";
+  const portalUrl = process.env.PORTAL_URL;
   const name = `${opts.firstName} ${opts.lastName}`;
   const roleLabel = (r: string) =>
     r === "co_chair" ? "Co-Chair" : r === "steward" ? "Steward" : "Member";
@@ -339,7 +338,7 @@ export async function sendGrievanceFiledNotification(opts: {
   const adminEmail = await getAdminEmail();
   if (!adminEmail) return;
 
-  const portalUrl = process.env.PORTAL_URL ?? "https://union-local-1285.fly.dev";
+  const portalUrl = process.env.PORTAL_URL;
   const stepLabel = opts.step === 5 ? "Step 5 — Arbitration" : `Step ${opts.step}`;
   const adaBadge = opts.isAda
     ? `<span style="background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:700;margin-left:8px;">ADA</span>`
@@ -413,7 +412,7 @@ export async function sendGrievanceStatusNotification(opts: {
   const adminEmail = await getAdminEmail();
   if (!adminEmail) return;
 
-  const portalUrl = process.env.PORTAL_URL ?? "https://union-local-1285.fly.dev";
+  const portalUrl = process.env.PORTAL_URL;
   const stepLabel = opts.step === 5 ? "Arbitration" : `Step ${opts.step}`;
   const statusLabel = (s: string) =>
     s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
