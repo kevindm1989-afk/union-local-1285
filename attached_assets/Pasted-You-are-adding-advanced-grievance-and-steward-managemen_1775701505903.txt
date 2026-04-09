@@ -1,0 +1,159 @@
+You are adding advanced grievance and steward management features to an existing union local PWA. The app is deployed on Fly.io with Neon PostgreSQL + Drizzle ORM. Do not modify any existing tables, routes, or components unless explicitly told to below.
+
+## What already exists (do not rebuild)
+- Members, Grievances, Announcements, Dashboard
+- File attachments, audit logging, RBAC
+- Express 5 + React + Vite + shadcn/ui + TanStack Query + Wouter
+
+## What to build (in this order)
+
+### 1. STEWARD CASE JOURNAL (highest priority)
+- New table: case_journal_entries
+  - id, grievance_id, author_id, entry_type (enum: note | call | meeting | email | management_contact), content (text), is_private (boolean, default true), created_at, updated_at
+- This table is NEVER exposed to the "member" role — enforce at API level
+- API routes:
+  - GET /api/grievances/:id/journal — list entries (steward+ only)
+  - POST /api/grievances/:id/journal — create entry
+  - PATCH /api/grievances/:id/journal/:entryId — edit own entry only
+  - DELETE /api/grievances/:id/journal/:entryId — delete own entry only
+- UI: collapsible journal panel inside the grievance detail page
+- Each entry shows: timestamp, author name, entry type badge, content
+- Entries are sorted newest first
+- Add a "Add Journal Entry" button with entry_type selector and text area
+- Warn steward on entry creation: "This note is private and will not be shared with the member"
+
+### 2. GRIEVANCE TEMPLATES
+- New table: grievance_templates
+  - id, title, violation_type (enum: discipline | scheduling | seniority_bypass | harassment | health_safety | wages | benefits | other), description_template (text), contract_article (text), default_step (integer, default 1), created_by, created_at, is_active (boolean)
+- API routes:
+  - GET /api/grievance-templates — list all active templates
+  - POST /api/grievance-templates — create (admin only)
+  - PATCH /api/grievance-templates/:id — update (admin only)
+  - DELETE /api/grievance-templates/:id — soft delete via is_active=false (admin only)
+- UI: on the "New Grievance" form add a "Use Template" button
+  - Opens a modal listing templates grouped by violation_type
+  - Selecting a template pre-fills: title, description, contract_article, step
+  - Steward can edit all pre-filled fields before submitting
+- Seed 6 starter templates on first run:
+  - Unjust Discipline, Seniority Bypass, Scheduling Violation, Wage Discrepancy, Failure to Accommodate, Harassment/Bullying
+
+### 3. JUST CAUSE CHECKLIST
+- New table: just_cause_assessments
+  - id, grievance_id, assessed_by, assessed_at
+  - Seven boolean columns: adequate_notice, reasonable_rule, investigation_conducted, investigation_fair, proof_sufficient, penalty_consistent, penalty_progressive
+  - notes (text) — optional notes per assessment
+- API routes:
+  - GET /api/grievances/:id/just-cause — get assessment
+  - POST /api/grievances/:id/just-cause — create or update assessment
+- UI: collapsible "Just Cause Assessment" panel inside grievance detail (steward+ only)
+- Render each of the 7 elements as a labelled checkbox with a plain-language description:
+  1. Adequate Notice — "Was the employee warned their conduct could result in discipline?"
+  2. Reasonable Rule — "Is the rule being enforced reasonable and related to the operation?"
+  3. Investigation Conducted — "Did management investigate before imposing discipline?"
+  4. Fair Investigation — "Was the investigation fair and objective?"
+  5. Proof Sufficient — "Is there sufficient proof the employee violated the rule?"
+  6. Penalty Consistent — "Has the penalty been applied consistently to all employees?"
+  7. Penalty Progressive — "Is the penalty appropriate given the employee's record?"
+- Show a summary score (e.g. "5/7 elements met") with color coding: green (6-7), yellow (4-5), red (0-3)
+- This panel is NEVER visible to member role
+
+### 4. MEMBER COMMUNICATION LOG
+- New table: member_communication_log
+  - id, grievance_id, member_id, logged_by, contact_method (enum: in_person | phone | text | email | voicemail | no_answer), summary (text), contact_date (date), created_at
+- API routes:
+  - GET /api/grievances/:id/communications — list (steward+ only)
+  - POST /api/grievances/:id/communications — create entry
+- UI: collapsible "Member Contact Log" panel inside grievance detail
+- Each entry shows: date, method badge, logged by, summary
+- Add entry button with: date picker, contact_method selector, summary text area
+- This log is NEVER visible to member role
+
+### 5. DISCIPLINE TRACKING
+- New table: discipline_records
+  - id, member_id, discipline_type (enum: verbal_warning | written_warning | suspension_paid | suspension_unpaid | termination | other), incident_date (date), issued_date (date), description (text), response_filed (boolean, default false), grievance_id (nullable FK to grievances), created_by, created_at
+- API routes:
+  - GET /api/members/:id/discipline — list discipline history (steward+ only)
+  - POST /api/members/:id/discipline — add record
+  - PATCH /api/members/:id/discipline/:recordId — update
+  - DELETE /api/members/:id/discipline/:recordId — delete
+- UI: "Discipline History" tab inside member detail page (steward+ only, never member role)
+- Show records in chronological order with type badge, date, description
+- Flag if no grievance has been filed against a discipline record (show "No grievance filed" warning badge)
+- Show total count of discipline records prominently on member profile for stewards
+
+### 6. GRIEVANCE STATISTICS DASHBOARD
+- New page: /stats — accessible from dashboard for steward+ role only
+- Pull from existing grievances table — no new table needed
+- Display the following metrics:
+  - Total grievances by status (bar chart)
+  - Win/withdrawal/pending rate (donut chart) — resolved = win, withdrawn = withdrawal
+  - Grievances by department (bar chart)
+  - Grievances by contract article violated (top 5 list)
+  - Average days to resolution by step
+  - Monthly filing trend (line chart, last 12 months)
+- Use recharts for all charts (already available in React ecosystem)
+- All stats are steward+ only — 403 if member role hits /api/stats/*
+
+### 7. BARGAINING UNIT MAP
+- New table: steward_coverage
+  - id, steward_id (FK to users), department, shift (enum: days | afternoons | nights | rotating), area_notes (text), created_at, updated_at
+- API routes:
+  - GET /api/coverage — list all coverage assignments
+  - POST /api/coverage — assign steward to area (admin only)
+  - PATCH /api/coverage/:id — update
+  - DELETE /api/coverage/:id — remove
+- UI: new "Coverage" page (admin only)
+- Table view: department, shift, assigned steward name, notes
+- Highlight departments with NO steward assigned in red
+- Link member's department to coverage map — show assigned steward on member profile
+
+### 8. VOTING / POLLING TOOL
+- New table: polls
+  - id, title, description (text), poll_type (enum: yes_no | multiple_choice), options (jsonb array of strings, used for multiple_choice), starts_at, ends_at, created_by, is_active (boolean), target_role (enum: all | member | steward)
+- New table: poll_responses
+  - id, poll_id, user_id, response (text), responded_at
+  - Unique constraint on (poll_id, user_id) — one vote per member
+- API routes:
+  - GET /api/polls — list active polls for current user's role
+  - POST /api/polls — create (admin only)
+  - POST /api/polls/:id/respond — submit vote (cannot change after submission)
+  - GET /api/polls/:id/results — view results (admin/steward only during active poll, all roles after poll ends)
+- UI: new "Polls" tab in bottom nav
+- Member view: see open polls, submit vote, see results after poll closes
+- Admin view: create poll, see live results, close poll early
+- Push notification triggered when new poll goes live
+
+### 9. ONBOARDING CHECKLIST
+- New table: onboarding_checklists
+  - id, member_id, created_by, created_at
+  - Boolean columns: card_signed, dues_explained, cba_provided, steward_introduced, rights_explained, benefits_explained, completed_at (nullable timestamp)
+- Auto-create checklist record when a new member's union card is signed (hook into digital card signing flow)
+- API routes:
+  - GET /api/members/:id/onboarding — get checklist
+  - PATCH /api/members/:id/onboarding — update checklist items
+- UI: "Onboarding" section on member profile (steward+ only)
+- Show checklist with checkboxes, completion percentage bar
+- Flag incomplete onboarding on member list with a badge
+
+### 10. CONTRACT EXPIRY ALERTS
+- Add to local_settings table: cba_expiry_date (date), bargaining_prep_days_notice (integer, default 180)
+- New API route: GET /api/settings/cba-expiry — returns expiry date and days remaining
+- UI: dashboard widget showing CBA expiry countdown if within bargaining_prep_days_notice window
+- Push notification sent to steward+ roles at: 180 days, 90 days, 30 days before expiry
+
+### 11. DARK MODE
+- Use shadcn/ui built-in dark mode via class strategy on <html> element
+- Add theme toggle button in the app header/settings
+- Persist preference to localStorage
+- Default to system preference (prefers-color-scheme)
+- Ensure all custom CSS variables respect dark mode tokens
+
+## Coding Rules (same as base app)
+- Always use Drizzle ORM — never raw SQL
+- All new tables need a migration file under db/migrations/
+- All new API routes need corresponding OpenAPI spec entries and Orval codegen run
+- Role checks on every protected route: throw 403 if role insufficient
+- Never expose journal, just cause, discipline, communication log, or engagement data to "member" role
+- TypeScript strict mode — no `any` types
+- Error responses: { error: string, code: string } format consistently
+- All dates stored as UTC
