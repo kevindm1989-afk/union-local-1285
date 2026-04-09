@@ -1,6 +1,6 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { db, conversations, messages } from "@workspace/db";
-import { eq, asc } from "drizzle-orm";
+import { eq, asc, and } from "drizzle-orm";
 import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { ANTHROPIC_MODEL } from "../../lib/anthropic/constants";
 import { SendAnthropicMessageBody } from "@workspace/api-zod";
@@ -31,6 +31,7 @@ router.get("/conversations", asyncHandler(async (req: Request, res: Response) =>
     const rows = await db
       .select()
       .from(conversations)
+      .where(eq(conversations.userId, req.session.userId!))
       .orderBy(asc(conversations.createdAt));
     res.json(rows);
   } catch (err) {
@@ -48,7 +49,7 @@ router.post("/conversations", asyncHandler(async (req: Request, res: Response) =
   try {
     const [row] = await db
       .insert(conversations)
-      .values({ title: String(title).trim() })
+      .values({ title: String(title).trim(), userId: req.session.userId! })
       .returning();
     res.status(201).json(row);
   } catch (err) {
@@ -67,7 +68,7 @@ router.get("/conversations/:id", asyncHandler(async (req: Request, res: Response
     const [conv] = await db
       .select()
       .from(conversations)
-      .where(eq(conversations.id, id))
+      .where(and(eq(conversations.id, id), eq(conversations.userId, req.session.userId!)))
       .limit(1);
     if (!conv) {
       res.status(404).json({ error: "Conversation not found" });
@@ -95,13 +96,13 @@ router.delete("/conversations/:id", asyncHandler(async (req: Request, res: Respo
     const [conv] = await db
       .select({ id: conversations.id })
       .from(conversations)
-      .where(eq(conversations.id, id))
+      .where(and(eq(conversations.id, id), eq(conversations.userId, req.session.userId!)))
       .limit(1);
     if (!conv) {
       res.status(404).json({ error: "Conversation not found" });
       return;
     }
-    await db.delete(conversations).where(eq(conversations.id, id));
+    await db.delete(conversations).where(and(eq(conversations.id, id), eq(conversations.userId, req.session.userId!)));
     res.status(204).send();
   } catch (err) {
     req.log.error({ err }, "Failed to delete conversation");
@@ -116,6 +117,15 @@ router.get("/conversations/:id/messages", asyncHandler(async (req: Request, res:
     return;
   }
   try {
+    const [conv] = await db
+      .select({ id: conversations.id })
+      .from(conversations)
+      .where(and(eq(conversations.id, id), eq(conversations.userId, req.session.userId!)))
+      .limit(1);
+    if (!conv) {
+      res.status(404).json({ error: "Conversation not found", code: "NOT_FOUND" });
+      return;
+    }
     const msgs = await db
       .select()
       .from(messages)
@@ -146,7 +156,7 @@ router.post("/conversations/:id/messages", aiChatLimiter, asyncHandler(async (re
     const [conv] = await db
       .select({ id: conversations.id })
       .from(conversations)
-      .where(eq(conversations.id, id))
+      .where(and(eq(conversations.id, id), eq(conversations.userId, req.session.userId!)))
       .limit(1);
     if (!conv) {
       res.status(404).json({ error: "Conversation not found" });
