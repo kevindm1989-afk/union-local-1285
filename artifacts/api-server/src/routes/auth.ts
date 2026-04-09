@@ -1,11 +1,10 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import bcrypt from "bcryptjs";
 import { db, usersTable, accessRequestsTable, rolePermissionsTable } from "@workspace/db";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { ALL_PERMISSIONS, loadUserPermissions } from "../lib/seedAdmin";
-import { sendAccessRequestNotification } from "../lib/email";
 import { asyncHandler } from "../lib/asyncHandler";
-import { loginLimiter, accessRequestLimiter } from "../lib/rateLimiters";
+import { loginLimiter } from "../lib/rateLimiters";
 import { z } from "zod/v4";
 
 const createUserSchema = z.object({
@@ -126,52 +125,6 @@ router.get("/auth/me", (req: Request, res: Response) => {
     permissions: req.session.permissions ?? [],
     linkedMemberId: req.session.linkedMemberId ?? null,
   });
-});
-
-/**
- * POST /auth/request-access
- */
-router.post("/auth/request-access", accessRequestLimiter, async (req: Request, res: Response) => {
-  const { name, username, reason } = req.body ?? {};
-
-  if (!name || !username) {
-    res.status(400).json({ error: "Name and username are required", code: "BAD_REQUEST" });
-    return;
-  }
-
-  try {
-    const existing = await db
-      .select({ id: accessRequestsTable.id })
-      .from(accessRequestsTable)
-      .where(eq(accessRequestsTable.username, String(username).toLowerCase().trim()))
-      .limit(1);
-
-    if (existing.length > 0) {
-      res.status(409).json({ error: "A request for that username already exists", code: "CONFLICT" });
-      return;
-    }
-
-    const [request] = await db
-      .insert(accessRequestsTable)
-      .values({
-        name: String(name).trim(),
-        username: String(username).toLowerCase().trim(),
-        reason: reason ? String(reason).trim() : null,
-      })
-      .returning();
-
-    res.status(201).json(request);
-
-    // Fire-and-forget — don't let email failure affect the response
-    sendAccessRequestNotification({
-      requesterName: request.name,
-      requesterUsername: request.username,
-      reason: request.reason,
-    });
-  } catch (err) {
-    req.log.error({ err }, "Access request error");
-    res.status(500).json({ error: "Internal server error", code: "INTERNAL_ERROR" });
-  }
 });
 
 /**
