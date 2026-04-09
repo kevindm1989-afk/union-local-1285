@@ -36,7 +36,7 @@ router.post("/auth/login", loginLimiter, async (req: Request, res: Response) => 
   const { username, password } = req.body ?? {};
 
   if (!username || !password) {
-    res.status(400).json({ error: "Username and password are required" });
+    res.status(400).json({ error: "Username and password are required", code: "BAD_REQUEST" });
     return;
   }
 
@@ -48,13 +48,13 @@ router.post("/auth/login", loginLimiter, async (req: Request, res: Response) => 
       .limit(1);
 
     if (!user || !user.isActive) {
-      res.status(401).json({ error: "Invalid username or password" });
+      res.status(401).json({ error: "Invalid username or password", code: "UNAUTHORIZED" });
       return;
     }
 
     const valid = await bcrypt.compare(String(password), user.passwordHash);
     if (!valid) {
-      res.status(401).json({ error: "Invalid username or password" });
+      res.status(401).json({ error: "Invalid username or password", code: "UNAUTHORIZED" });
       return;
     }
 
@@ -73,7 +73,7 @@ router.post("/auth/login", loginLimiter, async (req: Request, res: Response) => 
     req.session.save((err) => {
       if (err) {
         req.log.error({ err }, "Session save failed");
-        res.status(500).json({ error: "Failed to create session" });
+        res.status(500).json({ error: "Failed to create session", code: "INTERNAL_ERROR" });
         return;
       }
       res.json({
@@ -87,7 +87,7 @@ router.post("/auth/login", loginLimiter, async (req: Request, res: Response) => 
     });
   } catch (err) {
     req.log.error({ err }, "Login error");
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Internal server error", code: "INTERNAL_ERROR" });
   }
 });
 
@@ -106,7 +106,7 @@ router.post("/auth/logout", (req: Request, res: Response) => {
  */
 router.get("/auth/me", (req: Request, res: Response) => {
   if (!req.session.userId) {
-    res.status(401).json({ error: "Not authenticated" });
+    res.status(401).json({ error: "Not authenticated", code: "UNAUTHORIZED" });
     return;
   }
   res.json({
@@ -126,7 +126,7 @@ router.post("/auth/request-access", accessRequestLimiter, async (req: Request, r
   const { name, username, reason } = req.body ?? {};
 
   if (!name || !username) {
-    res.status(400).json({ error: "Name and username are required" });
+    res.status(400).json({ error: "Name and username are required", code: "BAD_REQUEST" });
     return;
   }
 
@@ -138,7 +138,7 @@ router.post("/auth/request-access", accessRequestLimiter, async (req: Request, r
       .limit(1);
 
     if (existing.length > 0) {
-      res.status(409).json({ error: "A request for that username already exists" });
+      res.status(409).json({ error: "A request for that username already exists", code: "CONFLICT" });
       return;
     }
 
@@ -161,7 +161,7 @@ router.post("/auth/request-access", accessRequestLimiter, async (req: Request, r
     });
   } catch (err) {
     req.log.error({ err }, "Access request error");
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Internal server error", code: "INTERNAL_ERROR" });
   }
 });
 
@@ -170,7 +170,7 @@ router.post("/auth/request-access", accessRequestLimiter, async (req: Request, r
  */
 router.get("/auth/access-requests", asyncHandler(async (req: Request, res: Response) => {
   if (!["admin", "chair"].includes(req.session.role ?? "")) {
-    res.status(403).json({ error: "Admin access required" });
+    res.status(403).json({ error: "Admin access required", code: "FORBIDDEN" });
     return;
   }
   const requests = await db
@@ -185,7 +185,7 @@ router.get("/auth/access-requests", asyncHandler(async (req: Request, res: Respo
  */
 router.post("/auth/access-requests/:id/approve", asyncHandler(async (req: Request, res: Response) => {
   if (!["admin", "chair"].includes(req.session.role ?? "")) {
-    res.status(403).json({ error: "Admin access required" });
+    res.status(403).json({ error: "Admin access required", code: "FORBIDDEN" });
     return;
   }
   const id = Number(req.params.id);
@@ -196,7 +196,7 @@ router.post("/auth/access-requests/:id/approve", asyncHandler(async (req: Reques
       .where(eq(accessRequestsTable.id, id))
       .limit(1);
     if (!request) {
-      res.status(404).json({ error: "Request not found" });
+      res.status(404).json({ error: "Request not found", code: "NOT_FOUND" });
       return;
     }
 
@@ -220,10 +220,10 @@ router.post("/auth/access-requests/:id/approve", asyncHandler(async (req: Reques
     res.json({ user: newUser, tempPassword });
   } catch (err: any) {
     if (err?.code === "23505") {
-      res.status(409).json({ error: "A user with that username already exists" });
+      res.status(409).json({ error: "A user with that username already exists", code: "CONFLICT" });
     } else {
       req.log.error({ err }, "Approve request error");
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ error: "Internal server error", code: "INTERNAL_ERROR" });
     }
   }
 }));
@@ -233,7 +233,7 @@ router.post("/auth/access-requests/:id/approve", asyncHandler(async (req: Reques
  */
 router.delete("/auth/access-requests/:id", asyncHandler(async (req: Request, res: Response) => {
   if (!["admin", "chair"].includes(req.session.role ?? "")) {
-    res.status(403).json({ error: "Admin access required" });
+    res.status(403).json({ error: "Admin access required", code: "FORBIDDEN" });
     return;
   }
   const id = Number(req.params.id);
@@ -246,7 +246,7 @@ router.delete("/auth/access-requests/:id", asyncHandler(async (req: Request, res
  */
 router.get("/auth/users", asyncHandler(async (req: Request, res: Response) => {
   if (!["admin", "chair"].includes(req.session.role ?? "")) {
-    res.status(403).json({ error: "Admin access required" });
+    res.status(403).json({ error: "Admin access required", code: "FORBIDDEN" });
     return;
   }
   const memberIdFilter = req.query.memberId ? parseInt(req.query.memberId as string, 10) : null;
@@ -273,17 +273,17 @@ router.get("/auth/users", asyncHandler(async (req: Request, res: Response) => {
  */
 router.post("/auth/users", asyncHandler(async (req: Request, res: Response) => {
   if (!["admin", "chair"].includes(req.session.role ?? "")) {
-    res.status(403).json({ error: "Admin access required" });
+    res.status(403).json({ error: "Admin access required", code: "FORBIDDEN" });
     return;
   }
   const { username, displayName, role, password } = req.body ?? {};
   if (!username || !displayName || !password) {
-    res.status(400).json({ error: "username, displayName, and password are required" });
+    res.status(400).json({ error: "username, displayName, and password are required", code: "BAD_REQUEST" });
     return;
   }
   const strengthError = validatePasswordStrength(String(password));
   if (strengthError) {
-    res.status(400).json({ error: strengthError });
+    res.status(400).json({ error: strengthError, code: "BAD_REQUEST" });
     return;
   }
   try {
@@ -308,10 +308,10 @@ router.post("/auth/users", asyncHandler(async (req: Request, res: Response) => {
     res.status(201).json(newUser);
   } catch (err: any) {
     if (err?.code === "23505") {
-      res.status(409).json({ error: "Username already exists" });
+      res.status(409).json({ error: "Username already exists", code: "CONFLICT" });
     } else {
       req.log.error({ err }, "Create user error");
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ error: "Internal server error", code: "INTERNAL_ERROR" });
     }
   }
 }));
@@ -321,7 +321,7 @@ router.post("/auth/users", asyncHandler(async (req: Request, res: Response) => {
  */
 router.patch("/auth/users/:id", asyncHandler(async (req: Request, res: Response) => {
   if (!["admin", "chair"].includes(req.session.role ?? "")) {
-    res.status(403).json({ error: "Admin access required" });
+    res.status(403).json({ error: "Admin access required", code: "FORBIDDEN" });
     return;
   }
   const id = Number(req.params.id);
@@ -334,13 +334,13 @@ router.patch("/auth/users/:id", asyncHandler(async (req: Request, res: Response)
   if (password) {
     const strengthError = validatePasswordStrength(String(password));
     if (strengthError) {
-      res.status(400).json({ error: strengthError });
+      res.status(400).json({ error: strengthError, code: "BAD_REQUEST" });
       return;
     }
     updates.passwordHash = await bcrypt.hash(String(password), 12);
   }
   if (Object.keys(updates).length === 0) {
-    res.status(400).json({ error: "Nothing to update" });
+    res.status(400).json({ error: "Nothing to update", code: "BAD_REQUEST" });
     return;
   }
   const [updated] = await db
@@ -355,7 +355,7 @@ router.patch("/auth/users/:id", asyncHandler(async (req: Request, res: Response)
       isActive: usersTable.isActive,
     });
   if (!updated) {
-    res.status(404).json({ error: "User not found" });
+    res.status(404).json({ error: "User not found", code: "NOT_FOUND" });
     return;
   }
   res.json(updated);
@@ -366,15 +366,15 @@ router.patch("/auth/users/:id", asyncHandler(async (req: Request, res: Response)
  */
 router.patch("/auth/users/:id/role", asyncHandler(async (req: Request, res: Response) => {
   if (!["admin", "chair"].includes(req.session.role ?? "")) {
-    res.status(403).json({ error: "Admin access required" });
+    res.status(403).json({ error: "Admin access required", code: "FORBIDDEN" });
     return;
   }
   const userId = parseInt(req.params.id as string, 10);
-  if (isNaN(userId)) { res.status(400).json({ error: "Invalid user ID" }); return; }
+  if (isNaN(userId)) { res.status(400).json({ error: "Invalid user ID", code: "BAD_REQUEST" }); return; }
   const { role } = req.body ?? {};
   const VALID_ROLES = ["admin", "chair", "steward", "member"];
   if (!role || !VALID_ROLES.includes(role)) {
-    res.status(400).json({ error: "role must be one of: admin, chair, steward, member" });
+    res.status(400).json({ error: "role must be one of: admin, chair, steward, member", code: "BAD_REQUEST" });
     return;
   }
   const [user] = await db
@@ -382,7 +382,7 @@ router.patch("/auth/users/:id/role", asyncHandler(async (req: Request, res: Resp
     .set({ role })
     .where(eq(usersTable.id, userId))
     .returning({ id: usersTable.id, username: usersTable.username, displayName: usersTable.displayName, role: usersTable.role });
-  if (!user) { res.status(404).json({ error: "User not found" }); return; }
+  if (!user) { res.status(404).json({ error: "User not found", code: "NOT_FOUND" }); return; }
   res.json(user);
 }));
 
@@ -391,7 +391,7 @@ router.patch("/auth/users/:id/role", asyncHandler(async (req: Request, res: Resp
  */
 router.get("/auth/roles/permissions", asyncHandler(async (req: Request, res: Response) => {
   if (!["admin", "chair"].includes(req.session.role ?? "")) {
-    res.status(403).json({ error: "Admin access required" });
+    res.status(403).json({ error: "Admin access required", code: "FORBIDDEN" });
     return;
   }
   const rows = await db.select().from(rolePermissionsTable);
@@ -408,25 +408,25 @@ router.get("/auth/roles/permissions", asyncHandler(async (req: Request, res: Res
  */
 router.delete("/auth/users/:id", asyncHandler(async (req: Request, res: Response) => {
   if (!["admin", "chair"].includes(req.session.role ?? "")) {
-    res.status(403).json({ error: "Admin access required" });
+    res.status(403).json({ error: "Admin access required", code: "FORBIDDEN" });
     return;
   }
   const id = Number(req.params.id);
   if (isNaN(id)) {
-    res.status(400).json({ error: "Invalid user ID" });
+    res.status(400).json({ error: "Invalid user ID", code: "BAD_REQUEST" });
     return;
   }
   if (id === req.session.userId) {
-    res.status(400).json({ error: "Cannot delete your own account" });
+    res.status(400).json({ error: "Cannot delete your own account", code: "BAD_REQUEST" });
     return;
   }
   const [target] = await db.select({ id: usersTable.id, role: usersTable.role }).from(usersTable).where(eq(usersTable.id, id));
   if (!target) {
-    res.status(404).json({ error: "User not found" });
+    res.status(404).json({ error: "User not found", code: "NOT_FOUND" });
     return;
   }
   if (target.role === "admin") {
-    res.status(400).json({ error: "Cannot delete an admin account" });
+    res.status(400).json({ error: "Cannot delete an admin account", code: "BAD_REQUEST" });
     return;
   }
   await db.delete(usersTable).where(eq(usersTable.id, id));
@@ -438,20 +438,20 @@ router.delete("/auth/users/:id", asyncHandler(async (req: Request, res: Response
  */
 router.patch("/auth/roles/permissions", asyncHandler(async (req: Request, res: Response) => {
   if (!["admin", "chair"].includes(req.session.role ?? "")) {
-    res.status(403).json({ error: "Admin access required" });
+    res.status(403).json({ error: "Admin access required", code: "FORBIDDEN" });
     return;
   }
   const { role, permission, granted } = req.body ?? {};
   if (!role || !permission || typeof granted !== "boolean") {
-    res.status(400).json({ error: "role, permission, and granted (boolean) are required" });
+    res.status(400).json({ error: "role, permission, and granted (boolean) are required", code: "BAD_REQUEST" });
     return;
   }
   if (!["chair", "steward", "member"].includes(role)) {
-    res.status(400).json({ error: "Can only modify chair, steward, or member permissions" });
+    res.status(400).json({ error: "Can only modify chair, steward, or member permissions", code: "BAD_REQUEST" });
     return;
   }
   if (!(ALL_PERMISSIONS as readonly string[]).includes(permission)) {
-    res.status(400).json({ error: "Unknown permission" });
+    res.status(400).json({ error: "Unknown permission", code: "BAD_REQUEST" });
     return;
   }
   await db

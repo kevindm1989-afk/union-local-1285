@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, text, boolean, timestamp, jsonb, unique } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, boolean, timestamp, jsonb, unique, index } from "drizzle-orm/pg-core";
 
 export const pollsTable = pgTable("polls", {
   id: serial("id").primaryKey(),
@@ -24,7 +24,10 @@ export const pollResponsesTable = pgTable("poll_responses", {
   userId: integer("user_id").notNull(),
   response: text("response").notNull(),
   respondedAt: timestamp("responded_at").notNull().defaultNow(),
-}, (t) => [unique().on(t.pollId, t.userId)]);
+}, (t) => [
+  unique().on(t.pollId, t.userId),
+  index("poll_responses_poll_id_idx").on(t.pollId),
+]);
 
 export type Poll = typeof pollsTable.$inferSelect;
 export type PollResponse = typeof pollResponsesTable.$inferSelect;
