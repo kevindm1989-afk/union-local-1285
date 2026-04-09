@@ -1,0 +1,106 @@
+You are performing a full diagnostic audit of an existing union local PWA. The app is deployed on Fly.io with Neon PostgreSQL + Drizzle ORM. Do not fix anything yet — identify and report all errors first.
+
+## What to audit (in this order)
+
+### 1. TYPESCRIPT ERRORS
+- Run: pnpm run typecheck
+- Capture all errors with file path, line number, and error message
+- Group by: type errors | missing types | implicit any | unused variables | import errors
+
+### 2. BUILD ERRORS
+- Run: pnpm run build
+- Capture any build failures with full error output
+- Note which artifact failed: pwa-app | api-server | db | api-spec
+
+### 3. DATABASE SCHEMA ERRORS
+- Check all Drizzle schema files for:
+  - Missing foreign key references
+  - Enum mismatches between schema and usage in routes
+  - Missing indexes on frequently queried columns (member_id, grievance_id, status, created_at)
+  - Nullable fields that should be required or vice versa
+  - Tables referenced in routes that do not exist in schema
+
+### 4. API ROUTE ERRORS
+- Check every route in api-server for:
+  - Routes that reference a database table or column that does not exist
+  - Missing auth/role middleware on protected routes
+  - Routes missing from OpenAPI spec (will break Orval codegen)
+  - Inconsistent error response format (should always be { error: string, code: string })
+  - Missing input validation (no Zod schema on POST/PATCH body)
+  - Missing rate limiting on public endpoints
+  - Any route that exposes member | steward fields to the wrong role
+
+### 5. FRONTEND ERRORS
+- Check all React components for:
+  - Components using API hooks that do not exist in generated Orval client
+  - Missing loading states on async data fetches
+  - Missing error boundary or error handling on TanStack Query calls
+  - Forms missing client-side Zod validation
+  - Routes defined in Wouter that have no corresponding component
+  - Components that reference env variables not set in Fly.io
+
+### 6. ENVIRONMENT VARIABLE AUDIT
+- List every process.env or import.meta.env reference across all artifacts
+- Flag any that are not set in fly.toml or Fly.io secrets
+- Flag any secrets that are hardcoded instead of using env vars
+
+### 7. DEPENDENCY AUDIT
+- Run: pnpm audit
+- List all high and critical severity vulnerabilities
+- Flag any dependencies that are outdated and causing conflicts
+- Check that @neondatabase/serverless is being used — flag if pg or postgres is used directly
+
+### 8. OPENAPI / ORVAL SYNC ERRORS
+- Check that every API route has a corresponding entry in the OpenAPI spec
+- Check that Orval-generated hooks match the actual API response shapes
+- Flag any drift between spec and implementation
+
+### 9. ROLE & PERMISSION ERRORS
+- Audit every API route and UI component for role enforcement
+- Flag any route missing role check middleware
+- Flag any component that renders sensitive data (journal, discipline, engagement, just cause) without role check
+- Flag any member-role user who could access steward or admin data
+
+### 10. RUNTIME / LOGIC ERRORS
+- Check for:
+  - Any hardcoded localhost URLs that will break in production
+  - Missing CORS configuration for Fly.io domain
+  - Session configuration not set for production (secure cookies, sameSite)
+  - Database connection not using Neon serverless pooled URL
+  - Any console.log statements leaking sensitive data in production
+  - Missing try/catch on async database calls
+  - Unhandled promise rejections in Express routes (missing next(err))
+
+## Output Format
+Produce a structured report in this exact format:
+
+---
+## DIAGNOSTIC REPORT
+
+### CRITICAL (blocks app from running)
+- [FILE PATH] [LINE] — [ERROR DESCRIPTION]
+
+### HIGH (causes data loss, security risk, or broken feature)
+- [FILE PATH] [LINE] — [ERROR DESCRIPTION]
+
+### MEDIUM (degraded UX or missing validation)
+- [FILE PATH] [LINE] — [ERROR DESCRIPTION]
+
+### LOW (code quality, warnings, minor issues)
+- [FILE PATH] [LINE] — [ERROR DESCRIPTION]
+
+### ENVIRONMENT VARIABLES — MISSING
+- [VARIABLE NAME] — referenced in [FILE] — not found in fly.toml or secrets
+
+### DEPENDENCIES — VULNERABILITIES
+- [PACKAGE] [VERSION] — [SEVERITY] — [DESCRIPTION]
+
+### SUMMARY
+- Total critical: X
+- Total high: X
+- Total medium: X
+- Total low: X
+- Recommended fix order: [list top 5 by priority]
+---
+
+Do not attempt to fix anything. Do not modify any files. Report only.
