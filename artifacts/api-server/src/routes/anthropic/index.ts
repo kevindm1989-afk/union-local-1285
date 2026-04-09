@@ -5,6 +5,7 @@ import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { ANTHROPIC_MODEL } from "../../lib/anthropic/constants";
 import { SendAnthropicMessageBody } from "@workspace/api-zod";
 import { aiChatLimiter } from "../../lib/rateLimiters";
+import { asyncHandler } from "../../lib/asyncHandler";
 // @ts-ignore — .txt imported via esbuild text loader
 import cbaText from "../../data/cba.txt";
 
@@ -25,7 +26,7 @@ Here is the full Collective Agreement text:
 ${cbaText}
 ---`;
 
-router.get("/conversations", async (req: Request, res: Response) => {
+router.get("/conversations", asyncHandler(async (req: Request, res: Response) => {
   try {
     const rows = await db
       .select()
@@ -36,9 +37,9 @@ router.get("/conversations", async (req: Request, res: Response) => {
     req.log.error({ err }, "Failed to list conversations");
     res.status(500).json({ error: "Internal server error" });
   }
-});
+}));
 
-router.post("/conversations", async (req: Request, res: Response) => {
+router.post("/conversations", asyncHandler(async (req: Request, res: Response) => {
   const { title } = req.body ?? {};
   if (!title) {
     res.status(400).json({ error: "title is required" });
@@ -54,9 +55,9 @@ router.post("/conversations", async (req: Request, res: Response) => {
     req.log.error({ err }, "Failed to create conversation");
     res.status(500).json({ error: "Internal server error" });
   }
-});
+}));
 
-router.get("/conversations/:id", async (req: Request, res: Response) => {
+router.get("/conversations/:id", asyncHandler(async (req: Request, res: Response) => {
   const id = parseInt(req.params.id as string, 10);
   if (isNaN(id)) {
     res.status(400).json({ error: "Invalid id" });
@@ -82,9 +83,9 @@ router.get("/conversations/:id", async (req: Request, res: Response) => {
     req.log.error({ err }, "Failed to get conversation");
     res.status(500).json({ error: "Internal server error" });
   }
-});
+}));
 
-router.delete("/conversations/:id", async (req: Request, res: Response) => {
+router.delete("/conversations/:id", asyncHandler(async (req: Request, res: Response) => {
   const id = parseInt(req.params.id as string, 10);
   if (isNaN(id)) {
     res.status(400).json({ error: "Invalid id" });
@@ -106,9 +107,9 @@ router.delete("/conversations/:id", async (req: Request, res: Response) => {
     req.log.error({ err }, "Failed to delete conversation");
     res.status(500).json({ error: "Internal server error" });
   }
-});
+}));
 
-router.get("/conversations/:id/messages", async (req: Request, res: Response) => {
+router.get("/conversations/:id/messages", asyncHandler(async (req: Request, res: Response) => {
   const id = parseInt(req.params.id as string, 10);
   if (isNaN(id)) {
     res.status(400).json({ error: "Invalid id" });
@@ -125,9 +126,9 @@ router.get("/conversations/:id/messages", async (req: Request, res: Response) =>
     req.log.error({ err }, "Failed to list messages");
     res.status(500).json({ error: "Internal server error" });
   }
-});
+}));
 
-router.post("/conversations/:id/messages", aiChatLimiter, async (req: Request, res: Response) => {
+router.post("/conversations/:id/messages", aiChatLimiter, asyncHandler(async (req: Request, res: Response) => {
   const id = parseInt(req.params.id as string, 10);
   if (isNaN(id)) {
     res.status(400).json({ error: "Invalid id" });
@@ -206,6 +207,6 @@ router.post("/conversations/:id/messages", aiChatLimiter, async (req: Request, r
       res.end();
     }
   }
-});
+}));
 
 export default router;
