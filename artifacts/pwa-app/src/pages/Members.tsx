@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { MobileLayout } from "@/components/layout/MobileLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import {
   Search, Phone, Mail, ChevronRight, User, Download,
-  Filter, CheckSquare, Square, Users, UserX, Loader2, Plus,
+  Filter, CheckSquare, Square, Users, UserX, Loader2, Plus, Trash2,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -48,6 +48,7 @@ type StatusFilter = "active" | "inactive" | "all";
 export default function Members() {
   const { can } = usePermissions();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const debouncedSearch = useLocalDebounce(search, 300);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("active");
@@ -58,6 +59,24 @@ export default function Members() {
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [bulkMode, setBulkMode] = useState(false);
   const [csvExporting, setCsvExporting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const deleteMutation = useMutation({
+    mutationFn: async (ids: number[]) => {
+      for (const id of ids) {
+        const res = await fetch(`/api/members/${id}`, { method: "DELETE", credentials: "include" });
+        if (!res.ok) throw new Error(`Failed to delete member ${id}`);
+      }
+    },
+    onSuccess: (_, ids) => {
+      queryClient.invalidateQueries({ queryKey: ["members"] });
+      setSelected(new Set());
+      setShowDeleteConfirm(false);
+      setBulkMode(false);
+      toast({ title: `${ids.length} member${ids.length !== 1 ? "s" : ""} removed` });
+    },
+    onError: () => toast({ title: "Delete failed", description: "Could not remove one or more members.", variant: "destructive" }),
+  });
 
   const { data: allMembers = [], isLoading } = useQuery<Member[]>({
     queryKey: ["members", debouncedSearch],
@@ -310,6 +329,37 @@ export default function Members() {
           </div>
         )}
 
+        {/* Delete confirmation dialog */}
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 z-50 flex items-end justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={() => setShowDeleteConfirm(false)}>
+            <div className="bg-card rounded-2xl shadow-xl w-full max-w-sm p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center gap-3">
+                <div className="bg-destructive/10 rounded-full p-2.5 shrink-0">
+                  <Trash2 className="w-5 h-5 text-destructive" />
+                </div>
+                <div>
+                  <p className="font-bold text-foreground">Remove {selected.size} member{selected.size !== 1 ? "s" : ""}?</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">This permanently deletes all their records, grievances, and data. This cannot be undone.</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setShowDeleteConfirm(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  className="flex-1 rounded-xl gap-1.5"
+                  onClick={() => deleteMutation.mutate([...selected])}
+                  disabled={deleteMutation.isPending}
+                >
+                  {deleteMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                  {deleteMutation.isPending ? "Removing…" : "Remove"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Bulk actions bar */}
         {bulkMode && (
           <div className="bg-card border border-border rounded-xl px-4 py-2.5 flex items-center gap-3">
@@ -322,6 +372,17 @@ export default function Members() {
               {selected.size > 0 ? `${selected.size} selected` : "Select all"}
             </button>
             <div className="flex-1" />
+            {can("members.edit") && selected.size > 0 && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-8 rounded-lg gap-1.5 text-xs font-bold text-destructive hover:bg-destructive/10"
+                onClick={() => setShowDeleteConfirm(true)}
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Delete
+              </Button>
+            )}
             <Button
               size="sm"
               variant="outline"
