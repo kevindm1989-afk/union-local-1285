@@ -4,7 +4,7 @@ export function requirePermission(permission: string) {
   return (req: Request, res: Response, next: NextFunction) => {
     if (req.session.role === "admin") return next();
     if (!req.session.permissions?.includes(permission)) {
-      res.status(403).json({ error: "Access denied", requiredPermission: permission });
+      res.status(403).json({ error: "Access denied", code: "FORBIDDEN" });
       return;
     }
     next();
@@ -14,7 +14,7 @@ export function requirePermission(permission: string) {
 export function requireSteward(req: Request, res: Response, next: NextFunction) {
   const role = req.session?.role;
   if (!role || role === "member") {
-    res.status(403).json({ error: "Access denied", code: "INSUFFICIENT_ROLE" });
+    res.status(403).json({ error: "Access denied", code: "FORBIDDEN" });
     return;
   }
   next();

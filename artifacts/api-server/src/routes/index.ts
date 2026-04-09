@@ -39,7 +39,7 @@ router.use("/access-requests", accessRequestsRouter);
 
 function requireAuth(req: Request, res: Response, next: NextFunction) {
   if (!req.session?.userId) {
-    res.status(401).json({ error: "Authentication required" });
+    res.status(401).json({ error: "Authentication required", code: "UNAUTHORIZED" });
     return;
   }
   next();
