@@ -2,13 +2,8 @@ import app from "./app";
 import { logger } from "./lib/logger";
 
 const REQUIRED_ENV_VARS = [
-  'DATABASE_URL',
   'SESSION_SECRET',
   'ADMIN_PASSWORD',
-  'PORTAL_URL',
-  'EMAIL_FROM',
-  'VAPID_PUBLIC_KEY',
-  'VAPID_PRIVATE_KEY',
 ];
 
 const missing = REQUIRED_ENV_VARS.filter(v => !process.env[v]);
@@ -17,8 +12,10 @@ if (missing.length > 0) {
   process.exit(1);
 }
 
-if (!process.env.REPLIT_CONNECTORS_HOSTNAME && !process.env.RESEND_API_KEY) {
-  console.error('FATAL: Email delivery requires RESEND_API_KEY on Fly.io');
+// Warn (but don't crash) if optional services are unconfigured
+const dbUrl = process.env.NEON_DATABASE_URL || process.env.DATABASE_URL || process.env.PG_URL;
+if (!dbUrl) {
+  console.error('FATAL: No database URL found. Set NEON_DATABASE_URL or DATABASE_URL.');
   process.exit(1);
 }
 
