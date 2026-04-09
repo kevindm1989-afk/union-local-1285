@@ -6,6 +6,7 @@ import { ANTHROPIC_MODEL } from "../lib/anthropic/constants";
 import { z } from "zod/v4";
 import { asyncHandler } from "../lib/asyncHandler";
 import { aiChatLimiter, grievanceCreateLimiter } from "../lib/rateLimiters";
+import { requireMemberAccess } from "../lib/permissions";
 // @ts-ignore — .txt imported via esbuild text loader
 import cbaText from "../data/cba.txt";
 
@@ -35,22 +36,10 @@ ${cbaText}
 
 const router = Router();
 
-function requireMemberRole(req: Request, res: Response, next: () => void) {
-  if (req.session?.role !== "member") {
-    res.status(403).json({ error: "Member portal access only", code: "FORBIDDEN" });
-    return;
-  }
-  if (!req.session.linkedMemberId) {
-    res.status(403).json({ error: "No member record linked to your account. Contact your steward.", code: "NO_LINKED_MEMBER" });
-    return;
-  }
-  next();
-}
-
 /**
  * GET /member-portal/profile — get own member record (no sensitive admin fields)
  */
-router.get("/profile", requireMemberRole, asyncHandler(async (req: Request, res: Response) => {
+router.get("/profile", requireMemberAccess, asyncHandler(async (req: Request, res: Response) => {
   const memberId = req.session.linkedMemberId!;
   const [member] = await db
     .select({
@@ -83,7 +72,7 @@ router.get("/profile", requireMemberRole, asyncHandler(async (req: Request, res:
 /**
  * PATCH /member-portal/profile — update own phone/email only
  */
-router.patch("/profile", requireMemberRole, asyncHandler(async (req: Request, res: Response) => {
+router.patch("/profile", requireMemberAccess, asyncHandler(async (req: Request, res: Response) => {
   const memberId = req.session.linkedMemberId!;
   const { phone, email } = req.body ?? {};
 
@@ -112,7 +101,7 @@ router.patch("/profile", requireMemberRole, asyncHandler(async (req: Request, re
 /**
  * GET /member-portal/grievances — own grievances (read-only, no steward notes)
  */
-router.get("/grievances", requireMemberRole, asyncHandler(async (req: Request, res: Response) => {
+router.get("/grievances", requireMemberAccess, asyncHandler(async (req: Request, res: Response) => {
   const memberId = req.session.linkedMemberId!;
   const grievances = await db
     .select({
@@ -136,7 +125,7 @@ router.get("/grievances", requireMemberRole, asyncHandler(async (req: Request, r
 /**
  * POST /member-portal/grievances — submit a new grievance (simplified form)
  */
-router.post("/grievances", requireMemberRole, grievanceCreateLimiter, asyncHandler(async (req: Request, res: Response) => {
+router.post("/grievances", requireMemberAccess, grievanceCreateLimiter, asyncHandler(async (req: Request, res: Response) => {
   const memberId = req.session.linkedMemberId!;
   const { description, dateOfIncident, accommodationRequest } = req.body ?? {};
 
@@ -180,7 +169,7 @@ router.post("/grievances", requireMemberRole, grievanceCreateLimiter, asyncHandl
 /**
  * GET /member-portal/bulletins — bulletin feed (active announcements)
  */
-router.get("/bulletins", requireMemberRole, asyncHandler(async (_req: Request, res: Response) => {
+router.get("/bulletins", requireMemberAccess, asyncHandler(async (_req: Request, res: Response) => {
   const bulletins = await db
     .select({
       id: announcementsTable.id,
@@ -199,7 +188,7 @@ router.get("/bulletins", requireMemberRole, asyncHandler(async (_req: Request, r
 /**
  * GET /member-portal/discipline — own discipline records (read-only)
  */
-router.get("/discipline", requireMemberRole, asyncHandler(async (req: Request, res: Response) => {
+router.get("/discipline", requireMemberAccess, asyncHandler(async (req: Request, res: Response) => {
   const memberId = req.session.linkedMemberId!;
   const records = await db
     .select({
@@ -221,7 +210,7 @@ router.get("/discipline", requireMemberRole, asyncHandler(async (req: Request, r
 /**
  * POST /member-portal/sign-card — save e-signature (union card signing)
  */
-router.post("/sign-card", requireMemberRole, asyncHandler(async (req: Request, res: Response) => {
+router.post("/sign-card", requireMemberAccess, asyncHandler(async (req: Request, res: Response) => {
   const memberId = req.session.linkedMemberId!;
   const { signatureData } = req.body ?? {};
 
@@ -256,7 +245,7 @@ router.post("/sign-card", requireMemberRole, asyncHandler(async (req: Request, r
  * History is passed in-request and not persisted to the database.
  * Has its own try/catch for streaming error handling.
  */
-router.post("/ai/chat", requireMemberRole, aiChatLimiter, async (req: Request, res: Response) => {
+router.post("/ai/chat", requireMemberAccess, aiChatLimiter, async (req: Request, res: Response) => {
   const parsed = chatSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(422).json({ error: "Invalid request body", code: "VALIDATION_ERROR" });

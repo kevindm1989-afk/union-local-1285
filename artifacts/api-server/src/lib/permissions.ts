@@ -28,3 +28,18 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction) {
   }
   next();
 }
+
+export function requireMemberAccess(req: Request, res: Response, next: NextFunction) {
+  const { role, linkedMemberId } = req.session ?? {};
+
+  if (role === "member") return next();
+
+  if (["steward", "co_chair", "admin"].includes(role ?? "") && linkedMemberId) {
+    return next();
+  }
+
+  res.status(403).json({
+    error: "Member portal access requires a linked member record",
+    code: "FORBIDDEN",
+  });
+}
