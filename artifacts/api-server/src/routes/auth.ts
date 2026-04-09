@@ -6,6 +6,15 @@ import { ALL_PERMISSIONS, loadUserPermissions } from "../lib/seedAdmin";
 import { sendAccessRequestNotification } from "../lib/email";
 import { asyncHandler } from "../lib/asyncHandler";
 import { loginLimiter, accessRequestLimiter } from "../lib/rateLimiters";
+import { z } from "zod/v4";
+
+const createUserSchema = z.object({
+  username: z.string().min(3).max(50),
+  displayName: z.string().min(1).max(100),
+  password: z.string().min(12),
+  role: z.enum(["member", "steward", "co_chair", "chair", "admin"]),
+  memberId: z.number().int().positive().nullable().optional(),
+});
 
 const router: IRouter = Router();
 
@@ -276,25 +285,30 @@ router.post("/auth/users", asyncHandler(async (req: Request, res: Response) => {
     res.status(403).json({ error: "Admin access required", code: "FORBIDDEN" });
     return;
   }
-  const { username, displayName, role, password } = req.body ?? {};
-  if (!username || !displayName || !password) {
-    res.status(400).json({ error: "username, displayName, and password are required", code: "BAD_REQUEST" });
-    return;
+  let body: z.infer<typeof createUserSchema>;
+  try {
+    body = createUserSchema.parse(req.body);
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      res.status(422).json({ error: err.message, code: "VALIDATION_ERROR" });
+      return;
+    }
+    throw err;
   }
-  const strengthError = validatePasswordStrength(String(password));
+  const strengthError = validatePasswordStrength(body.password);
   if (strengthError) {
     res.status(400).json({ error: strengthError, code: "BAD_REQUEST" });
     return;
   }
   try {
-    const passwordHash = await bcrypt.hash(String(password), 12);
+    const passwordHash = await bcrypt.hash(body.password, 12);
     const [newUser] = await db
       .insert(usersTable)
       .values({
-        username: String(username).toLowerCase().trim(),
-        displayName: String(displayName).trim(),
+        username: body.username.toLowerCase().trim(),
+        displayName: body.displayName.trim(),
         passwordHash,
-        role: (["admin", "chair", "steward", "member"] as string[]).includes(role) ? role : "steward",
+        role: body.role,
         isActive: true,
       })
       .returning({

@@ -3,6 +3,15 @@ import { db, caseJournalTable, usersTable } from "@workspace/db";
 import { eq, and, desc } from "drizzle-orm";
 import { requireSteward } from "../lib/permissions";
 import { asyncHandler } from "../lib/asyncHandler";
+import { z } from "zod/v4";
+
+const createJournalSchema = z.object({
+  entryType: z.enum(["note", "call", "meeting", "email", "management_contact"]),
+  content: z.string().min(1).max(10000),
+  isPrivate: z.boolean().default(true),
+});
+
+const updateJournalSchema = createJournalSchema.partial();
 
 const router = Router({ mergeParams: true });
 
@@ -37,10 +46,15 @@ router.post("/", asyncHandler(async (req, res) => {
   const authorId = req.session?.userId;
   if (!authorId) { res.status(401).json({ error: "Unauthenticated", code: "UNAUTHENTICATED" }); return; }
 
-  const { entryType, content, isPrivate } = req.body as Record<string, unknown>;
-  if (!content || typeof content !== "string" || !content.trim()) {
-    res.status(400).json({ error: "content is required", code: "INVALID_BODY" });
-    return;
+  let body: z.infer<typeof createJournalSchema>;
+  try {
+    body = createJournalSchema.parse(req.body);
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      res.status(422).json({ error: err.message, code: "VALIDATION_ERROR" });
+      return;
+    }
+    throw err;
   }
 
   const [u] = await db.select({ displayName: usersTable.displayName }).from(usersTable).where(eq(usersTable.id, authorId));
@@ -48,9 +62,9 @@ router.post("/", asyncHandler(async (req, res) => {
     grievanceId,
     authorId,
     authorName: u?.displayName ?? null,
-    entryType: (entryType as "note" | "call" | "meeting" | "email" | "management_contact") ?? "note",
-    content: content.trim(),
-    isPrivate: isPrivate !== false,
+    entryType: body.entryType,
+    content: body.content.trim(),
+    isPrivate: body.isPrivate,
   }).returning();
 
   res.status(201).json(fmt(entry));
@@ -64,10 +78,20 @@ router.patch("/:entryId", asyncHandler(async (req, res) => {
   if (existing.authorId !== userId && req.session?.role !== "admin") {
     res.status(403).json({ error: "Can only edit your own entries", code: "FORBIDDEN" }); return;
   }
-  const { content, entryType } = req.body as Record<string, unknown>;
+  let body: z.infer<typeof updateJournalSchema>;
+  try {
+    body = updateJournalSchema.parse(req.body);
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      res.status(422).json({ error: err.message, code: "VALIDATION_ERROR" });
+      return;
+    }
+    throw err;
+  }
   const updates: Record<string, unknown> = { updatedAt: new Date() };
-  if (content && typeof content === "string") updates.content = content.trim();
-  if (entryType) updates.entryType = entryType;
+  if (body.content !== undefined) updates.content = body.content.trim();
+  if (body.entryType !== undefined) updates.entryType = body.entryType;
+  if (body.isPrivate !== undefined) updates.isPrivate = body.isPrivate;
   const [updated] = await db.update(caseJournalTable).set(updates).where(eq(caseJournalTable.id, entryId)).returning();
   res.json(fmt(updated));
 }));

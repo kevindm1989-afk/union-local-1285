@@ -3,6 +3,16 @@ import { db, stewardCoverageTable, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { requireSteward } from "../lib/permissions";
 import { asyncHandler } from "../lib/asyncHandler";
+import { z } from "zod/v4";
+
+const createCoverageSchema = z.object({
+  stewardId: z.number().int().positive(),
+  department: z.string().min(1).max(100),
+  shift: z.enum(["days", "afternoons", "nights", "rotating"]),
+  areaNotes: z.string().max(1000).nullable().optional(),
+});
+
+const updateCoverageSchema = createCoverageSchema.partial();
 
 const router = Router();
 
@@ -32,15 +42,21 @@ router.post("/", asyncHandler(async (req, res) => {
   if (req.session?.role !== "admin" && req.session?.role !== "chair") {
     res.status(403).json({ error: "Admin only", code: "FORBIDDEN" }); return;
   }
-  const body = req.body as Record<string, unknown>;
-  if (!body.stewardId || !body.department) {
-    res.status(400).json({ error: "stewardId and department required", code: "INVALID_BODY" }); return;
+  let body: z.infer<typeof createCoverageSchema>;
+  try {
+    body = createCoverageSchema.parse(req.body);
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      res.status(422).json({ error: err.message, code: "VALIDATION_ERROR" });
+      return;
+    }
+    throw err;
   }
   const [c] = await db.insert(stewardCoverageTable).values({
-    stewardId: Number(body.stewardId),
-    department: body.department as string,
-    shift: (body.shift as "days" | "afternoons" | "nights" | "rotating") ?? "days",
-    areaNotes: (body.areaNotes as string) ?? null,
+    stewardId: body.stewardId,
+    department: body.department,
+    shift: body.shift,
+    areaNotes: body.areaNotes ?? null,
   }).returning();
   res.status(201).json(await fmt(c));
 }));
@@ -50,11 +66,20 @@ router.patch("/:id", asyncHandler(async (req, res) => {
     res.status(403).json({ error: "Admin only", code: "FORBIDDEN" }); return;
   }
   const id = parseInt(req.params.id as string, 10);
-  const body = req.body as Record<string, unknown>;
+  let body: z.infer<typeof updateCoverageSchema>;
+  try {
+    body = updateCoverageSchema.parse(req.body);
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      res.status(422).json({ error: err.message, code: "VALIDATION_ERROR" });
+      return;
+    }
+    throw err;
+  }
   const updates: Record<string, unknown> = { updatedAt: new Date() };
-  if (body.stewardId) updates.stewardId = Number(body.stewardId);
-  if (body.department) updates.department = body.department;
-  if (body.shift) updates.shift = body.shift;
+  if (body.stewardId !== undefined) updates.stewardId = body.stewardId;
+  if (body.department !== undefined) updates.department = body.department;
+  if (body.shift !== undefined) updates.shift = body.shift;
   if (body.areaNotes !== undefined) updates.areaNotes = body.areaNotes;
   const [c] = await db.update(stewardCoverageTable).set(updates).where(eq(stewardCoverageTable.id, id)).returning();
   if (!c) { res.status(404).json({ error: "Not found", code: "NOT_FOUND" }); return; }
