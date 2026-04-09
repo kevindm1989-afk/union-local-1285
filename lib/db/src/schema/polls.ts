@@ -16,7 +16,11 @@ export const pollsTable = pgTable("polls", {
     enum: ["all", "member", "steward"],
   }).notNull().default("all"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  isActiveIdx: index("polls_is_active_idx").on(table.isActive),
+  endsAtIdx: index("polls_ends_at_idx").on(table.endsAt),
+  startsAtIdx: index("polls_starts_at_idx").on(table.startsAt),
+}));
 
 export const pollResponsesTable = pgTable("poll_responses", {
   id: serial("id").primaryKey(),

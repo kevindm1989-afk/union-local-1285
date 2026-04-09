@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, boolean, text, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, boolean, text, timestamp, index } from "drizzle-orm/pg-core";
 
 export const justCauseAssessmentsTable = pgTable("just_cause_assessments", {
   id: serial("id").primaryKey(),
@@ -13,6 +13,8 @@ export const justCauseAssessmentsTable = pgTable("just_cause_assessments", {
   penaltyConsistent: boolean("penalty_consistent").notNull().default(false),
   penaltyProgressive: boolean("penalty_progressive").notNull().default(false),
   notes: text("notes"),
-});
+}, (table) => ({
+  grievanceIdIdx: index("just_cause_grievance_id_idx").on(table.grievanceId),
+}));
 
 export type JustCauseAssessment = typeof justCauseAssessmentsTable.$inferSelect;

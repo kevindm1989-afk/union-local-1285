@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, text, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, timestamp, index } from "drizzle-orm/pg-core";
 
 export const stewardCoverageTable = pgTable("steward_coverage", {
   id: serial("id").primaryKey(),
@@ -10,6 +10,9 @@ export const stewardCoverageTable = pgTable("steward_coverage", {
   areaNotes: text("area_notes"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  departmentIdx: index("coverage_department_idx").on(table.department),
+  stewardIdIdx: index("coverage_steward_id_idx").on(table.stewardId),
+}));
 
 export type StewardCoverage = typeof stewardCoverageTable.$inferSelect;
