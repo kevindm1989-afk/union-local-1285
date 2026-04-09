@@ -1,0 +1,327 @@
+Fix the OpenAPI spec drift — the spec is missing the majority of API routes 
+causing Orval to generate zero typed hooks for them. All frontend calls to 
+these endpoints are currently untyped raw fetch calls.
+
+File: lib/api-spec/openapi.yaml
+
+## Instructions
+Do not change any existing spec entries. Only ADD the missing route definitions 
+below. After adding all routes run:
+pnpm --filter @workspace/api-spec run codegen
+to regenerate all Orval hooks and Zod schemas.
+
+## Missing route groups to add
+
+### 1. AUTH / ACCESS REQUESTS
+POST   /auth/request-access
+GET    /auth/access-requests
+GET    /auth/access-requests/{id}
+PATCH  /auth/access-requests/{id}/approve
+PATCH  /auth/access-requests/{id}/reject
+DELETE /auth/access-requests/{id}
+
+Request body for POST /auth/request-access:
+{
+  firstName: string
+  lastName: string
+  email: string (format: email)
+  phone: string
+  employeeId: string
+  department: string
+  shift: enum [days, afternoons, nights, rotating]
+  requestedRole: enum [member, steward, co_chair]
+  roleJustification: string (nullable, required if requestedRole is steward or co_chair)
+  message: string (nullable)
+}
+
+Request body for PATCH /auth/access-requests/{id}/approve:
+{
+  approvedRole: enum [member, steward, co_chair, admin]
+}
+
+Request body for PATCH /auth/access-requests/{id}/reject:
+{
+  rejectionReason: string
+}
+
+### 2. AUTH / USERS & ROLES
+POST   /auth/users
+GET    /auth/users
+PATCH  /auth/users/{id}
+GET    /auth/roles
+GET    /auth/permissions
+
+### 3. MEETINGS
+GET    /api/meetings
+POST   /api/meetings
+GET    /api/meetings/{id}
+PATCH  /api/meetings/{id}
+DELETE /api/meetings/{id}
+
+Request body for POST/PATCH /api/meetings:
+{
+  title: string
+  type: enum [executive, general, stewards]
+  date: string (format: date-time)
+  location: string
+  agenda: string (nullable)
+  minutes: string (nullable)
+  attendees: array of integer (member IDs)
+}
+
+### 4. POLLS
+GET    /api/polls
+POST   /api/polls
+GET    /api/polls/{id}
+PATCH  /api/polls/{id}
+DELETE /api/polls/{id}
+POST   /api/polls/{id}/respond
+GET    /api/polls/{id}/results
+
+Request body for POST /api/polls:
+{
+  title: string
+  description: string (nullable)
+  pollType: enum [yes_no, multiple_choice]
+  options: array of string (nullable, required if pollType is multiple_choice)
+  startsAt: string (format: date-time)
+  endsAt: string (format: date-time)
+  targetRole: enum [all, member, steward]
+}
+
+Request body for POST /api/polls/{id}/respond:
+{
+  response: string
+}
+
+### 5. COVERAGE (BARGAINING UNIT MAP)
+GET    /api/coverage
+POST   /api/coverage
+PATCH  /api/coverage/{id}
+DELETE /api/coverage/{id}
+
+Request body for POST/PATCH /api/coverage:
+{
+  stewardId: integer
+  department: string
+  shift: enum [days, afternoons, nights, rotating]
+  areaNotes: string (nullable)
+}
+
+### 6. STATS
+GET    /api/stats/grievances
+GET    /api/stats/members
+GET    /api/stats/disciplines
+
+Response for GET /api/stats/grievances:
+{
+  byStatus: object
+  winRate: number
+  withdrawalRate: number
+  byDepartment: array
+  byArticle: array
+  avgDaysToResolution: number
+  monthlyTrend: array
+}
+
+### 7. MEMBER PORTAL (member role routes)
+GET    /api/member-portal/profile
+PATCH  /api/member-portal/profile
+GET    /api/member-portal/grievances
+POST   /api/member-portal/grievances
+GET    /api/member-portal/grievances/{id}
+POST   /api/member-portal/ai/chat
+
+Request body for POST /api/member-portal/ai/chat:
+{
+  messages: array of:
+    {
+      role: enum [user, assistant]
+      content: string (min: 1, max: 10000)
+    }
+  (min: 1 item, max: 50 items)
+}
+
+### 8. PUSH NOTIFICATIONS
+POST   /api/push/subscribe
+POST   /api/push/send
+DELETE /api/push/unsubscribe
+
+Request body for POST /api/push/subscribe:
+{
+  endpoint: string
+  p256dh: string
+  auth: string
+}
+
+Request body for POST /api/push/send:
+{
+  title: string
+  body: string
+  targetRole: enum [all, member, steward, admin] (nullable)
+  targetDepartment: string (nullable)
+}
+
+### 9. JOURNAL (case journal entries)
+GET    /api/grievances/{id}/journal
+POST   /api/grievances/{id}/journal
+PATCH  /api/grievances/{id}/journal/{entryId}
+DELETE /api/grievances/{id}/journal/{entryId}
+
+Request body for POST/PATCH:
+{
+  entryType: enum [note, call, meeting, email, management_contact]
+  content: string
+  isPrivate: boolean (default: true)
+}
+
+### 10. JUST CAUSE ASSESSMENT
+GET    /api/grievances/{id}/just-cause
+POST   /api/grievances/{id}/just-cause
+
+Request body for POST:
+{
+  adequateNotice: boolean
+  reasonableRule: boolean
+  investigationConducted: boolean
+  investigationFair: boolean
+  proofSufficient: boolean
+  penaltyConsistent: boolean
+  penaltyProgressive: boolean
+  notes: string (nullable)
+}
+
+### 11. MEMBER COMMUNICATION LOG
+GET    /api/grievances/{id}/communications
+POST   /api/grievances/{id}/communications
+
+Request body for POST:
+{
+  contactMethod: enum [in_person, phone, text, email, voicemail, no_answer]
+  summary: string
+  contactDate: string (format: date)
+  memberId: integer
+}
+
+### 12. DISCIPLINE RECORDS
+GET    /api/members/{id}/discipline
+POST   /api/members/{id}/discipline
+PATCH  /api/members/{id}/discipline/{recordId}
+DELETE /api/members/{id}/discipline/{recordId}
+
+Request body for POST/PATCH:
+{
+  disciplineType: enum [verbal_warning, written_warning, suspension_paid, suspension_unpaid, termination, other]
+  incidentDate: string (format: date)
+  issuedDate: string (format: date)
+  description: string
+  responseFiled: boolean (default: false)
+  grievanceId: integer (nullable)
+}
+
+### 13. ONBOARDING CHECKLIST
+GET    /api/members/{id}/onboarding
+PATCH  /api/members/{id}/onboarding
+
+Request body for PATCH:
+{
+  cardSigned: boolean
+  duesExplained: boolean
+  cbaProvided: boolean
+  stewardIntroduced: boolean
+  rightsExplained: boolean
+  benefitsExplained: boolean
+}
+
+### 14. GRIEVANCE TEMPLATES
+GET    /api/grievance-templates
+POST   /api/grievance-templates
+PATCH  /api/grievance-templates/{id}
+DELETE /api/grievance-templates/{id}
+
+Request body for POST/PATCH:
+{
+  title: string
+  violationType: enum [discipline, scheduling, seniority_bypass, harassment, wages, benefits, other]
+  descriptionTemplate: string
+  contractArticle: string (nullable)
+  defaultStep: integer (min: 1, max: 5, default: 1)
+}
+
+### 15. SETTINGS / CBA INFO
+GET    /api/settings
+PATCH  /api/settings
+GET    /api/cba-info
+
+Request body for PATCH /api/settings:
+{
+  cbaExpiryDate: string (format: date, nullable)
+  bargainingPrepDaysNotice: integer (default: 180)
+  timezone: string (default: UTC)
+  stepDeadlines: object:
+    {
+      step1Days: integer
+      step2Days: integer
+      step3Days: integer
+      step4Days: integer
+      arbitrationDays: integer
+    }
+}
+
+### 16. AUDIT LOG
+GET    /api/audit-logs
+
+Query parameters:
+  entityType: string (nullable)
+  entityId: integer (nullable)
+  userId: integer (nullable)
+  from: string (format: date, nullable)
+  to: string (format: date, nullable)
+  limit: integer (default: 50, max: 200)
+  offset: integer (default: 0)
+
+## Standard response schemas to apply to all routes
+
+### Success responses
+200/201:
+{
+  data: [route-specific object or array]
+  meta: (for list endpoints only)
+    {
+      total: integer
+      limit: integer
+      offset: integer
+    }
+}
+
+### Error responses (apply to all routes)
+400: { error: string, code: 'VALIDATION_ERROR' }
+401: { error: string, code: 'UNAUTHORIZED' }
+403: { error: string, code: 'FORBIDDEN' }
+404: { error: string, code: 'NOT_FOUND' }
+409: { error: string, code: 'CONFLICT' }
+422: { error: string, code: 'VALIDATION_ERROR' }
+429: { error: string, code: 'RATE_LIMITED' }
+500: { error: string, code: 'INTERNAL_ERROR' }
+
+## After adding all routes
+1. Run: pnpm --filter @workspace/api-spec run codegen
+2. Run: pnpm run typecheck
+3. Fix any type errors in the generated output before finishing
+4. Do not manually edit any generated files in lib/api-zod/src/generated/
+   or lib/api-hooks/src/ — these are overwritten by codegen
+
+## Verification
+After codegen confirm the following hooks exist in the generated output:
+- useGetApiGrievancesIdJournal
+- usePostApiGrievancesIdJournal
+- useGetApiMembersIdDiscipline
+- usePostApiMembersIdDiscipline
+- useGetApiPolls
+- usePostApiPollsIdRespond
+- useGetApiStats
+- useGetApiMeetings
+- usePostApiMemberPortalAiChat
+- useGetApiAccessRequests
+
+This is the largest single fix in the whole audit — once Orval regenerates from this spec every frontend call gets full type safety instead of raw untyped fetch. After this runs, paste the codegen output here
