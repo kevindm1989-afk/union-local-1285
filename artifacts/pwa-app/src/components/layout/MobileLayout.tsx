@@ -184,38 +184,22 @@ export function MobileLayout({ children }: { children: React.ReactNode }) {
         {children}
       </main>
 
+      {/* FAB — fixed above nav bar, bottom-right */}
+      {newLink && (
+        <Link
+          href={newLink}
+          className="fixed bottom-[84px] right-4 z-40 flex items-center justify-center w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-xl shadow-primary/40 hover:scale-105 active:scale-95 transition-all"
+          style={{ maxWidth: "calc(480px - 1rem)", right: "max(1rem, calc(50vw - 240px + 1rem))" }}
+        >
+          <Plus className="w-6 h-6" strokeWidth={2.5} />
+        </Link>
+      )}
+
       <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-background border-t border-border z-50">
         <div className="flex items-center justify-between px-1 pb-safe">
-          {navItems.map((item, i) => {
+          {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = section === item.id;
-            const isMidpoint = i === 2 && newLink;
-
-            if (isMidpoint) {
-              return (
-                <div key={item.id} className="flex flex-col items-center" style={{ minWidth: 0, flex: 1 }}>
-                  <Link
-                    href={item.href}
-                    className={cn(
-                      "flex flex-col items-center justify-center py-2 gap-0.5 w-full transition-all rounded-xl",
-                      isActive ? "text-primary font-bold" : "text-muted-foreground hover:bg-muted/50"
-                    )}
-                  >
-                    <Icon className="w-5 h-5" />
-                    <span className="text-[9px] font-semibold uppercase tracking-wide">{item.label}</span>
-                  </Link>
-                  {newLink && (
-                    <Link
-                      href={newLink}
-                      className="flex items-center justify-center w-10 h-10 bg-primary text-primary-foreground rounded-xl shadow-md shadow-primary/30 hover:scale-105 active:scale-95 transition-all mt-0.5"
-                    >
-                      <Plus className="w-5 h-5" strokeWidth={2.5} />
-                    </Link>
-                  )}
-                </div>
-              );
-            }
-
             return (
               <Link
                 key={item.id}
