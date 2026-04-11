@@ -45,8 +45,8 @@ export default function Login({ onLoginSuccess }: LoginProps) {
         <div className="w-full max-w-[360px] space-y-6">
           {/* Logo */}
           <div className="text-center space-y-2">
-            <img src="/icon.png" alt="Unionize" className="w-16 h-16 mx-auto rounded-2xl shadow-lg" />
-            <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Unionize</h1>
+            <img src="/icon.png" alt="Advisor" className="w-16 h-16 mx-auto rounded-2xl shadow-lg" />
+            <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Advisor</h1>
             <p className="text-sm text-muted-foreground">Steward Portal</p>
           </div>
 
@@ -111,7 +111,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
 
       <div className="pb-8 text-center">
         <p className="text-xs text-muted-foreground">
-          Unionize — Member & Steward Portal
+          Advisor — Member & Steward Portal
         </p>
       </div>
     </div>

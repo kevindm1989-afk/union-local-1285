@@ -68,7 +68,7 @@ export default function Dashboard() {
             {format(new Date(), "EEEE, MMMM d")}
           </p>
           <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
-            Unionize
+            Advisor
           </h1>
           <p className="text-sm text-muted-foreground">Steward Dashboard</p>
         </header>

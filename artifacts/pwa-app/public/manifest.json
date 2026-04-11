@@ -1,7 +1,7 @@
 {
-  "name": "Unionize",
-  "short_name": "Unionize",
-  "description": "Unionize — Member & Steward Portal",
+  "name": "Advisor",
+  "short_name": "Advisor",
+  "description": "Advisor — Member & Steward Portal",
   "icons": [
     {
       "src": "/icon.png",

@@ -149,11 +149,11 @@ export async function sendAccessRequestNotification(opts: {
             Review in Admin Panel
           </a>
         </div>
-        <p style="margin-top:24px;font-size:12px;color:#aaa;">Unionize</p>
+        <p style="margin-top:24px;font-size:12px;color:#aaa;">Advisor</p>
       </div>
     `,
     text: [
-      "New Access Request — Unionize",
+      "New Access Request — Advisor",
       "",
       `Name:     ${opts.requesterName}`,
       `Username: @${opts.requesterUsername}`,
@@ -196,7 +196,7 @@ export async function sendAccessRequestApprovedEmail(opts: {
     subject: "Your union membership account has been approved",
     html: `
       <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;">
-        <h2 style="margin:0 0 8px;font-size:20px;color:#111;">Welcome to Unionize!</h2>
+        <h2 style="margin:0 0 8px;font-size:20px;color:#111;">Welcome to Advisor!</h2>
         <p style="margin:0 0 16px;color:#555;font-size:14px;">
           Hi ${opts.recipientName}, your access request has been approved. Here are your login credentials:
         </p>
@@ -219,11 +219,11 @@ export async function sendAccessRequestApprovedEmail(opts: {
         <div style="margin-top:24px;">
           <a href="${portalUrl}" style="display:inline-block;background:#b91c1c;color:#fff;text-decoration:none;padding:10px 20px;border-radius:8px;font-weight:700;font-size:14px;">Sign In Now</a>
         </div>
-        <p style="margin-top:24px;font-size:12px;color:#aaa;">Unionize</p>
+        <p style="margin-top:24px;font-size:12px;color:#aaa;">Advisor</p>
       </div>
     `,
     text: [
-      `Welcome to Unionize, ${opts.recipientName}!`,
+      `Welcome to Advisor, ${opts.recipientName}!`,
       "",
       "Your access request has been approved. Here are your login credentials:",
       `Portal: ${portalUrl}`,
@@ -258,7 +258,7 @@ export async function sendAccessRequestRejectedEmail(opts: {
           <p style="margin:4px 0 0;font-size:14px;color:#111;">${opts.rejectionReason}</p>
         </div>
         <p style="color:#555;font-size:13px;">If you believe this is an error, please contact your union steward directly.</p>
-        <p style="margin-top:24px;font-size:12px;color:#aaa;">Unionize</p>
+        <p style="margin-top:24px;font-size:12px;color:#aaa;">Advisor</p>
       </div>
     `,
     text: [
@@ -311,7 +311,7 @@ export async function sendNewMemberRequestNotification(opts: {
         <div style="margin-top:24px;">
           <a href="${portalUrl}/admin" style="display:inline-block;background:#b91c1c;color:#fff;text-decoration:none;padding:10px 20px;border-radius:8px;font-weight:700;font-size:14px;">Review in Admin Panel</a>
         </div>
-        <p style="margin-top:24px;font-size:12px;color:#aaa;">Unionize</p>
+        <p style="margin-top:24px;font-size:12px;color:#aaa;">Advisor</p>
       </div>
     `,
     text: `New access request from ${name} (${opts.email}). Requested role: ${opts.requestedRole ? roleLabel(opts.requestedRole) : "Member"}. Review at: ${portalUrl}/admin`,
@@ -331,7 +331,7 @@ export async function sendMemberDeactivatedEmail(opts: {
       <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;">
         <h2 style="margin:0 0 8px;font-size:20px;color:#111;">Account Deactivated</h2>
         <p style="color:#555;font-size:14px;">Hi ${opts.recipientName}, your union membership account has been deactivated. Contact your steward for more information.</p>
-        <p style="margin-top:24px;font-size:12px;color:#aaa;">Unionize</p>
+        <p style="margin-top:24px;font-size:12px;color:#aaa;">Advisor</p>
       </div>
     `,
     text: `Hi ${opts.recipientName}, your union membership account has been deactivated. Contact your steward for more information.`,
@@ -393,7 +393,7 @@ export async function sendGrievanceFiledNotification(opts: {
             View Grievance
           </a>
         </div>
-        <p style="margin-top:24px;font-size:12px;color:#aaa;">Unionize</p>
+        <p style="margin-top:24px;font-size:12px;color:#aaa;">Advisor</p>
       </div>
     `,
     text: [
@@ -465,7 +465,7 @@ export async function sendGrievanceStatusNotification(opts: {
             View Grievance
           </a>
         </div>
-        <p style="margin-top:24px;font-size:12px;color:#aaa;">Unionize</p>
+        <p style="margin-top:24px;font-size:12px;color:#aaa;">Advisor</p>
       </div>
     `,
     text: [

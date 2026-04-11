@@ -147,7 +147,7 @@ export default function RequestAccess() {
             <ShieldCheck className="w-4 h-4 text-primary-foreground" />
           </div>
           <div>
-            <p className="text-sm font-extrabold leading-none text-foreground">Unionize</p>
+            <p className="text-sm font-extrabold leading-none text-foreground">Advisor</p>
             <p className="text-[10px] text-muted-foreground">Membership Request</p>
           </div>
         </div>

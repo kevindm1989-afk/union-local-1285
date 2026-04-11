@@ -39,7 +39,7 @@ self.addEventListener('push', event => {
   try {
     payload = event.data.json();
   } catch {
-    payload = { title: 'Unionize', body: event.data.text() };
+    payload = { title: 'Advisor', body: event.data.text() };
   }
 
   const options = {
@@ -52,7 +52,7 @@ self.addEventListener('push', event => {
   };
 
   event.waitUntil(
-    self.registration.showNotification(payload.title || 'Unionize', options)
+    self.registration.showNotification(payload.title || 'Advisor', options)
   );
 });
 

@@ -113,7 +113,7 @@ export default function MemberPortalSignCard() {
                 </p>
               </div>
               <div className="w-full border border-green-200 dark:border-green-800/50 rounded-xl p-4 bg-background">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Unionize</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Advisor</p>
                 <p className="text-base font-bold text-foreground mt-1">{profile.name}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">Member in Good Standing</p>
               </div>
