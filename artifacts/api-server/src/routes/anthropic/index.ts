@@ -11,7 +11,7 @@ import cbaText from "../../data/cba.txt";
 
 const router: IRouter = Router();
 
-const SYSTEM_PROMPT = `You are a knowledgeable union steward assistant for Union Local 1285 in Ontario, Canada.
+const SYSTEM_PROMPT = `You are a knowledgeable union steward assistant for Unionize in Ontario, Canada.
 
 Your role is to help stewards and members understand their rights and entitlements. You draw on two authoritative sources:
 
