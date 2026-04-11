@@ -140,7 +140,7 @@ export default function Members() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `members-local1285-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.download = `members-${new Date().toISOString().slice(0, 10)}.csv`;
       a.click();
       URL.revokeObjectURL(url);
       toast({ title: `Exported ${rows.length} member${rows.length !== 1 ? "s" : ""}` });

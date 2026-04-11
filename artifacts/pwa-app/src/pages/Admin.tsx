@@ -816,7 +816,7 @@ export default function Admin() {
                       <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Admin Notification Email</label>
                       <Input
                         type="email"
-                        placeholder="steward@local1285.org"
+                        placeholder="steward@unionlocal.org"
                         value={settingsForm["admin_email"] ?? ""}
                         onChange={(e) => settingField("admin_email", e.target.value)}
                       />
@@ -826,7 +826,7 @@ export default function Admin() {
                       <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Portal URL</label>
                       <Input
                         type="url"
-                        placeholder="https://union-local-1285.fly.dev"
+                        placeholder="https://yourportal.example.com"
                         value={settingsForm["portal_url"] ?? ""}
                         onChange={(e) => settingField("portal_url", e.target.value)}
                       />
