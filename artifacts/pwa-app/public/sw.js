@@ -1,4 +1,4 @@
-const CACHE_NAME = 'union-local-1285-v2';
+const CACHE_NAME = 'jhsctracker-v2';
 const urlsToCache = [
   '/icon.png',
   '/manifest.json'

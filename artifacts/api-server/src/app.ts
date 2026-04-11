@@ -50,7 +50,7 @@ app.use(
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
   : [
-      "https://union-local-1285.fly.dev",
+      "https://jhsctracker-api.fly.dev",
       "https://unifor1285.replit.app",
     ];
 

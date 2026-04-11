@@ -826,7 +826,7 @@ export default function Admin() {
                       <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Portal URL</label>
                       <Input
                         type="url"
-                        placeholder="https://union-local-1285.fly.dev"
+                        placeholder="https://jhsctracker-api.fly.dev"
                         value={settingsForm["portal_url"] ?? ""}
                         onChange={(e) => settingField("portal_url", e.target.value)}
                       />
