@@ -6,9 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import {
   Search, Phone, Mail, ChevronRight, User, Download,
-  Filter, CheckSquare, Square, Users, UserX, Loader2, Plus, Trash2,
+  Filter, CheckSquare, Square, Users, UserX, Loader2, Plus, Trash2, Copy,
 } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/App";
@@ -60,6 +60,8 @@ export default function Members() {
   const [bulkMode, setBulkMode] = useState(false);
   const [csvExporting, setCsvExporting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showDuplicates, setShowDuplicates] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const deleteMutation = useMutation({
     mutationFn: async (ids: number[]) => {
@@ -76,6 +78,20 @@ export default function Members() {
       toast({ title: `${ids.length} member${ids.length !== 1 ? "s" : ""} removed` });
     },
     onError: () => toast({ title: "Delete failed", description: "Could not remove one or more members.", variant: "destructive" }),
+  });
+
+  const deleteSingleMutation = useMutation({
+    mutationFn: async (id: number) => {
+      setDeletingId(id);
+      const res = await fetch(`/api/members/${id}`, { method: "DELETE", credentials: "include" });
+      if (!res.ok) throw new Error("Failed to delete");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["members"] });
+      toast({ title: "Duplicate removed" });
+    },
+    onError: () => toast({ title: "Delete failed", variant: "destructive" }),
+    onSettled: () => setDeletingId(null),
   });
 
   const { data: allMembers = [], isLoading } = useQuery<Member[]>({
@@ -152,6 +168,17 @@ export default function Members() {
   const pendingCount = allMembers.filter((m) => !m.isActive).length;
   const activeCount = allMembers.filter((m) => m.isActive).length;
 
+  const duplicateGroups: Member[][] = Object.values(
+    allMembers
+      .filter((m) => m.email)
+      .reduce<Record<string, Member[]>>((acc, m) => {
+        const key = m.email!.toLowerCase().trim();
+        if (!acc[key]) acc[key] = [];
+        acc[key].push(m);
+        return acc;
+      }, {})
+  ).filter((group) => group.length > 1);
+
   return (
     <MobileLayout>
       <div className="p-4 sm:p-6 space-y-4 pb-10">
@@ -162,15 +189,29 @@ export default function Members() {
           </div>
           <div className="flex items-center gap-2">
             {can("members.edit") && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-9 rounded-xl gap-1.5"
-                onClick={() => { setBulkMode((v) => !v); setSelected(new Set()); }}
-              >
-                {bulkMode ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
-                {bulkMode ? "Done" : "Select"}
-              </Button>
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-9 rounded-xl gap-1.5"
+                  onClick={() => { setBulkMode((v) => !v); setSelected(new Set()); }}
+                >
+                  {bulkMode ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+                  {bulkMode ? "Done" : "Select"}
+                </Button>
+                {duplicateGroups.length > 0 && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-9 rounded-xl gap-1.5 border-amber-400 text-amber-700 hover:bg-amber-50 relative"
+                    onClick={() => setShowDuplicates((v) => !v)}
+                  >
+                    <Copy className="w-4 h-4" />
+                    {duplicateGroups.length}
+                    <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-amber-500" />
+                  </Button>
+                )}
+              </>
             )}
             <Button
               size="sm"
@@ -197,6 +238,63 @@ export default function Members() {
             className="pl-10 bg-card border-border shadow-sm text-base"
           />
         </div>
+
+        {/* Duplicates panel */}
+        {showDuplicates && can("members.edit") && (
+          <div className="bg-amber-50 border border-amber-300 rounded-xl p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <Copy className="w-4 h-4 text-amber-700 shrink-0" />
+              <p className="text-sm font-bold text-amber-800">
+                {duplicateGroups.length} email conflict{duplicateGroups.length !== 1 ? "s" : ""} detected
+              </p>
+            </div>
+            <p className="text-xs text-amber-700">
+              Multiple members share the same email address. Keep the correct record and delete the duplicate.
+            </p>
+            <div className="space-y-3">
+              {duplicateGroups.map((group) => (
+                <div key={group[0].email} className="bg-white border border-amber-200 rounded-xl overflow-hidden">
+                  <div className="px-3 py-2 bg-amber-100 border-b border-amber-200">
+                    <p className="text-xs font-bold text-amber-800">{group[0].email}</p>
+                  </div>
+                  {group.map((m) => (
+                    <div key={m.id} className="flex items-center gap-3 px-3 py-2.5 border-b border-amber-100 last:border-0">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-foreground">{m.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          ID #{m.id}
+                          {m.department ? ` · ${m.department}` : ""}
+                          {!m.isActive ? " · Inactive" : ""}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Link href={`/members/${m.id}`}>
+                          <Button size="sm" variant="outline" className="h-7 rounded-lg text-xs px-2">
+                            View
+                          </Button>
+                        </Link>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 rounded-lg text-xs px-2 text-destructive hover:bg-destructive/10 gap-1"
+                          onClick={() => deleteSingleMutation.mutate(m.id)}
+                          disabled={deleteSingleMutation.isPending && deletingId === m.id}
+                        >
+                          {deleteSingleMutation.isPending && deletingId === m.id ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-3 h-3" />
+                          )}
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Filters panel */}
         {showFilters && (
@@ -480,11 +578,8 @@ export default function Members() {
                         {!member.isActive && (
                           <span className="text-[10px] uppercase font-bold bg-muted text-muted-foreground px-1.5 py-0.5 rounded">Inactive</span>
                         )}
-                        {member.duesStatus === "delinquent" && (
-                          <span className="text-[10px] uppercase font-bold bg-red-100 text-red-700 border border-red-200 px-1.5 py-0.5 rounded">Dues Delinquent</span>
-                        )}
-                        {member.duesStatus === "suspended" && (
-                          <span className="text-[10px] uppercase font-bold bg-amber-100 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded">Dues Suspended</span>
+                        {member.duesStatus === "arrears" && (
+                          <span className="text-[10px] uppercase font-bold bg-red-100 text-red-700 border border-red-200 px-1.5 py-0.5 rounded">In Arrears</span>
                         )}
                       </div>
                       <div className="text-sm text-muted-foreground mt-0.5">

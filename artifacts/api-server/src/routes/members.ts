@@ -89,7 +89,7 @@ router.get("/", asyncHandler(async (req, res) => {
     .where(conditions.length ? and(...conditions) : undefined)
     .orderBy(membersTable.name);
 
-  res.json(members.map(formatMember));
+  res.json(members.map((m) => formatMember(m)));
 }));
 
 router.post("/", requirePermission("members.edit"), asyncHandler(async (req, res) => {
@@ -101,6 +101,24 @@ router.post("/", requirePermission("members.edit"), asyncHandler(async (req, res
 
   const d = parsed.data;
   const body = req.body as Record<string, unknown>;
+
+  if (d.email) {
+    const [existing] = await db
+      .select({ id: membersTable.id, name: membersTable.name })
+      .from(membersTable)
+      .where(eq(membersTable.email, d.email))
+      .limit(1);
+    if (existing) {
+      res.status(409).json({
+        error: "A member with this email already exists",
+        code: "DUPLICATE_EMAIL",
+        existingMemberId: existing.id,
+        existingMemberName: existing.name,
+      });
+      return;
+    }
+  }
+
   const [member] = await db
     .insert(membersTable)
     .values({
@@ -158,13 +176,21 @@ router.get("/:id", asyncHandler(async (req, res) => {
     return;
   }
 
-  const [member] = await db
-    .select()
-    .from(membersTable)
-    .where(eq(membersTable.id, parsed.data.id));
+  let member;
+  try {
+    const [row] = await db
+      .select()
+      .from(membersTable)
+      .where(eq(membersTable.id, parsed.data.id));
+    member = row;
+  } catch (err) {
+    console.error(`[members] GET /${parsed.data.id} db error:`, err);
+    res.status(500).json({ error: "Failed to fetch member" });
+    return;
+  }
 
   if (!member) {
-    res.status(404).json({ error: "Not found" });
+    res.status(404).json({ error: "Member not found" });
     return;
   }
 

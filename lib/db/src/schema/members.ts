@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, date, boolean, varchar, integer, index } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, date, boolean, varchar, integer, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -35,6 +35,7 @@ export const membersTable = pgTable("members", {
   employeeIdIdx: index("members_employee_id_idx").on(table.employeeId),
   departmentIdx: index("members_department_idx").on(table.department),
   isActiveIdx: index("members_is_active_idx").on(table.isActive),
+  emailUniqueIdx: uniqueIndex("members_email_unique_idx").on(table.email),
 }));
 
 export const insertMemberSchema = createInsertSchema(membersTable).omit({
