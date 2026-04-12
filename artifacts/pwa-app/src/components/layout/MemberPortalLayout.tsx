@@ -84,7 +84,7 @@ export function MemberPortalLayout({ children }: { children: React.ReactNode }) 
       </main>
 
       <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-background border-t border-border z-50">
-        <div className="flex items-center justify-between px-1 pb-safe">
+        <div className="flex items-center justify-around px-2 py-1 pb-safe">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = section === item.id;
@@ -92,14 +92,24 @@ export function MemberPortalLayout({ children }: { children: React.ReactNode }) 
               <Link
                 key={item.id}
                 href={item.href}
+                title={item.label}
                 className={cn(
-                  "flex flex-col items-center justify-center py-2 gap-0.5 transition-all rounded-xl",
-                  "min-w-0 flex-1",
-                  isActive ? "text-primary font-bold" : "text-muted-foreground hover:bg-muted/50"
+                  "flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl transition-all min-w-[40px]",
+                  isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                <Icon className="w-5 h-5" />
-                <span className="text-[9px] font-semibold uppercase tracking-wide">{item.label}</span>
+                <div className={cn(
+                  "flex items-center justify-center w-9 h-7 rounded-full transition-all",
+                  isActive ? "bg-primary/10" : ""
+                )}>
+                  <Icon className={cn("transition-all", isActive ? "w-5 h-5" : "w-5 h-5")} />
+                </div>
+                <span className={cn(
+                  "text-[9px] font-semibold leading-none tracking-wide",
+                  isActive ? "text-primary" : "text-muted-foreground"
+                )}>
+                  {item.label}
+                </span>
               </Link>
             );
           })}
