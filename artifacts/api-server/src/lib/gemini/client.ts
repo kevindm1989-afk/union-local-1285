@@ -1,22 +1,9 @@
 import { GoogleGenAI } from "@google/genai";
 
-const apiKey =
-  process.env.AI_INTEGRATIONS_GEMINI_API_KEY ||
-  process.env.GEMINI_API_KEY;
-
-if (!apiKey) {
+if (!process.env.GEMINI_API_KEY) {
   throw new Error(
-    "Missing Gemini API key. " +
-    "In production set GEMINI_API_KEY (flyctl secrets set GEMINI_API_KEY=...). " +
-    "In development provision the Replit Gemini integration."
+    "Missing GEMINI_API_KEY. Set it via: flyctl secrets set GEMINI_API_KEY=... (prod) or Replit Secrets (dev)."
   );
 }
 
-const baseUrl = process.env.AI_INTEGRATIONS_GEMINI_BASE_URL;
-
-export const ai = new GoogleGenAI({
-  apiKey,
-  ...(baseUrl
-    ? { httpOptions: { apiVersion: "", baseUrl } }
-    : {}),
-});
+export const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });

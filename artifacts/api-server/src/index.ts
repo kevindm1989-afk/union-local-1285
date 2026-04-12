@@ -12,14 +12,10 @@ if (missing.length > 0) {
   process.exit(1);
 }
 
-// AI assistant requires Gemini integration env vars (provisioned via Replit AI Integrations).
-const hasGeminiKey =
-  process.env.AI_INTEGRATIONS_GEMINI_BASE_URL && process.env.AI_INTEGRATIONS_GEMINI_API_KEY;
-if (!hasGeminiKey) {
+if (!process.env.GEMINI_API_KEY) {
   console.warn(
-    'WARNING: Gemini AI integration env vars not set. ' +
-    'AI assistant features will be unavailable. ' +
-    'Provision via: setupReplitAIIntegrations({ providerSlug: "gemini" })'
+    'WARNING: GEMINI_API_KEY is not set. AI assistant features will be unavailable. ' +
+    'Set it via Replit Secrets (dev) or: flyctl secrets set GEMINI_API_KEY=... (prod)'
   );
 }
 
