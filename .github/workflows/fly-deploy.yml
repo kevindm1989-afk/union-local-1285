@@ -25,21 +25,49 @@ jobs:
 
       - name: Verify required secrets
         run: |
-          SECRETS=$(flyctl secrets list 2>/dev/null || echo "")
-          if ! echo "$SECRETS" | grep -q "SESSION_SECRET"; then
-            echo "⚠️  SESSION_SECRET is not set on the Fly.io app."
-            echo "Run: fly secrets set SESSION_SECRET=\"\$(openssl rand -hex 32)\""
+          # Skip check if FLY_API_TOKEN is not available (can't authenticate)
+          if [ -z "$FLY_API_TOKEN" ]; then
+            echo "⚠️  FLY_API_TOKEN not set in GitHub secrets — skipping secret verification."
+            echo "Add it at: GitHub repo → Settings → Secrets → Actions → New repository secret"
+            echo "Get a token at: https://fly.io/user/personal_access_tokens"
+            exit 0
+          fi
+
+          # Fetch secrets; fail loudly if flyctl itself errors
+          if ! SECRETS=$(flyctl secrets list 2>&1); then
+            echo "⚠️  flyctl secrets list failed — check that FLY_API_TOKEN is valid."
+            echo "$SECRETS"
             exit 1
           fi
-          echo "✅ Required secrets present."
+
+          MISSING=()
+          for SECRET in SESSION_SECRET ADMIN_PASSWORD NEON_DATABASE_URL; do
+            if ! echo "$SECRETS" | grep -q "$SECRET"; then
+              MISSING+=("$SECRET")
+            fi
+          done
+
+          if [ ${#MISSING[@]} -gt 0 ]; then
+            echo "❌ Missing required secrets on the Fly.io app: ${MISSING[*]}"
+            echo ""
+            echo "Set them with:"
+            echo "  flyctl secrets set SESSION_SECRET=\"\$(openssl rand -hex 32)\""
+            echo "  flyctl secrets set ADMIN_PASSWORD=\"your-password\""
+            echo "  flyctl secrets set NEON_DATABASE_URL=\"your-neon-url\""
+            exit 1
+          fi
+
+          echo "✅ All required secrets are present."
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
       - name: Provision Tigris storage (first run only)
         run: |
-          # Create Tigris bucket if BUCKET_NAME secret is not already set on the app.
-          # `fly storage create` is idempotent-safe; it exits 0 if a bucket is already linked.
-          SECRETS=$(flyctl secrets list 2>/dev/null || echo "")
+          if [ -z "$FLY_API_TOKEN" ]; then
+            echo "⚠️  FLY_API_TOKEN not set — skipping Tigris provisioning."
+            exit 0
+          fi
+          SECRETS=$(flyctl secrets list 2>&1 || echo "")
           if ! echo "$SECRETS" | grep -q "BUCKET_NAME"; then
             echo "No Tigris bucket found — provisioning..."
             flyctl storage create --name union-local-1285-cba --yes || true
