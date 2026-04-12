@@ -42,9 +42,24 @@ const VIOLATION_TYPE_COLORS: Record<string, string> = {
   other: "bg-gray-100 text-gray-700 border-gray-200",
 };
 
+const GRIEVANCE_TYPES = [
+  { value: "discipline", label: "Discipline / Termination" },
+  { value: "seniority_bypass", label: "Seniority Bypass" },
+  { value: "wages", label: "Wages / Pay" },
+  { value: "scheduling", label: "Scheduling / Hours" },
+  { value: "health_safety", label: "Health & Safety" },
+  { value: "harassment", label: "Harassment / Bullying" },
+  { value: "benefits", label: "Benefits" },
+  { value: "accommodation", label: "Accommodation" },
+  { value: "other", label: "Other" },
+] as const;
+
 const formSchema = z.object({
   title: z.string().min(1, "Title is required"),
   memberId: z.string().optional(),
+  grievanceType: z.string().optional(),
+  incidentDate: z.string().optional(),
+  remedyRequested: z.string().optional(),
   description: z.string().optional(),
   contractArticle: z.string().optional(),
   step: z.string().default("1"),
@@ -85,6 +100,9 @@ export default function GrievanceCreate() {
     defaultValues: {
       title: "",
       memberId: "",
+      grievanceType: "",
+      incidentDate: "",
+      remedyRequested: "",
       description: "",
       contractArticle: "",
       step: "1",
@@ -109,6 +127,9 @@ export default function GrievanceCreate() {
       data: {
         title: values.title,
         memberId: values.memberId && values.memberId !== "none" ? parseInt(values.memberId) : null,
+        grievanceType: values.grievanceType || null,
+        incidentDate: values.incidentDate || null,
+        remedyRequested: values.remedyRequested || null,
         description: values.description || null,
         contractArticle: values.contractArticle || null,
         step: parseInt(values.step),
@@ -170,6 +191,37 @@ export default function GrievanceCreate() {
                   <FormMessage />
                 </FormItem>
               )} />
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField control={form.control} name="grievanceType" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Type</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="h-12 rounded-xl bg-card">
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="rounded-xl">
+                        {GRIEVANCE_TYPES.map((t) => (
+                          <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+
+                <FormField control={form.control} name="incidentDate" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Incident Date</FormLabel>
+                    <FormControl>
+                      <Input type="date" className="h-12 rounded-xl bg-card" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </div>
 
               <FormField control={form.control} name="contractArticle" render={({ field }) => (
                 <FormItem>
@@ -256,6 +308,16 @@ export default function GrievanceCreate() {
                   </FormItem>
                 )} />
               </div>
+
+              <FormField control={form.control} name="remedyRequested" render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Remedy Requested</FormLabel>
+                  <FormControl>
+                    <Textarea placeholder="What remedy is the member seeking? (e.g. reinstatement, back pay, written apology...)" className="min-h-[70px] rounded-xl bg-card resize-none" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
 
               <FormField control={form.control} name="notes" render={({ field }) => (
                 <FormItem>

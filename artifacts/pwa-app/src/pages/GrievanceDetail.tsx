@@ -185,6 +185,7 @@ export default function GrievanceDetail() {
   const [step, setStep] = useState("1");
   const [dueDate, setDueDate] = useState("");
   const [accommodationRequest, setAccommodationRequest] = useState(false);
+  const [outcome, setOutcome] = useState("");
   const initialized = useRef(false);
 
   const [newNote, setNewNote] = useState("");
@@ -210,6 +211,7 @@ export default function GrievanceDetail() {
       setStep(String(grievance.step));
       setDueDate(grievance.dueDate || "");
       setAccommodationRequest((grievance as any).accommodationRequest ?? false);
+      setOutcome((grievance as any).outcome || "");
     }
   }, [grievance]);
 
@@ -360,6 +362,46 @@ export default function GrievanceDetail() {
         </header>
 
         <div className="p-5 space-y-5 flex-1">
+          {/* Step Progress Tracker */}
+          <div className="bg-card border border-border rounded-xl p-4">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Grievance Progress</p>
+            <div className="relative">
+              <div className="absolute top-3 left-4 right-4 h-0.5 bg-muted" />
+              <div
+                className="absolute top-3 left-4 h-0.5 bg-primary transition-all duration-500"
+                style={{ width: `${Math.min(((parseInt(step) - 1) / 4) * 100, 100)}%` }}
+              />
+              <div className="relative flex justify-between">
+                {[
+                  { n: 1, label: "Step 1" },
+                  { n: 2, label: "Step 2" },
+                  { n: 3, label: "Step 3" },
+                  { n: 4, label: "Step 4" },
+                  { n: 5, label: "Arb." },
+                ].map(({ n, label }) => {
+                  const cur = parseInt(step);
+                  const done = cur > n;
+                  const active = cur === n;
+                  return (
+                    <div key={n} className="flex flex-col items-center gap-1">
+                      <div className={cn(
+                        "w-6 h-6 rounded-full border-2 flex items-center justify-center text-[10px] font-black transition-all",
+                        done ? "bg-primary border-primary text-primary-foreground" :
+                        active ? "bg-background border-primary text-primary" :
+                        "bg-background border-muted text-muted-foreground"
+                      )}>
+                        {done ? "✓" : n}
+                      </div>
+                      <span className={cn("text-[9px] font-semibold", active ? "text-primary" : "text-muted-foreground")}>
+                        {label}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
           {grievance.memberName && (
             <div className="bg-primary/10 border border-primary/20 rounded-xl px-4 py-2.5">
               <p className="text-xs font-bold text-primary uppercase tracking-wider">Member</p>
@@ -408,6 +450,21 @@ export default function GrievanceDetail() {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Outcome</label>
+            <Select value={outcome || "pending"} onValueChange={(v) => { const val = v === "pending" ? "" : v; setOutcome(val); handleUpdate("outcome", val || null); }}>
+              <SelectTrigger className="h-12 rounded-xl bg-card"><SelectValue /></SelectTrigger>
+              <SelectContent className="rounded-xl">
+                <SelectItem value="pending">Pending / In Progress</SelectItem>
+                <SelectItem value="settled">Settled</SelectItem>
+                <SelectItem value="arbitration">Sent to Arbitration</SelectItem>
+                <SelectItem value="withdrawn">Withdrawn</SelectItem>
+                <SelectItem value="denied">Denied</SelectItem>
+                <SelectItem value="won">Won</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">

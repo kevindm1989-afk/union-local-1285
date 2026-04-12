@@ -5,11 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useLocation, Link } from "wouter";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, UserCheck } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 
@@ -19,16 +21,20 @@ const formSchema = z.object({
   department: z.string().optional(),
   classification: z.string().optional(),
   phone: z.string().optional(),
-  email: z.string().email("Invalid email").optional().or(z.literal('')),
+  email: z.string().email("Invalid email").optional().or(z.literal("")),
   joinDate: z.string().optional(),
-  notes: z.string().optional()
+  seniorityDate: z.string().optional(),
+  shift: z.enum(["days", "afternoons", "nights", "rotating", ""]).optional(),
+  duesStatus: z.enum(["current", "arrears", "exempt", ""]).optional(),
+  cardSigned: z.boolean().default(false),
+  notes: z.string().optional(),
 });
 
 export default function MemberCreate() {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -39,8 +45,12 @@ export default function MemberCreate() {
       phone: "",
       email: "",
       joinDate: "",
-      notes: ""
-    }
+      seniorityDate: "",
+      shift: "",
+      duesStatus: "",
+      cardSigned: false,
+      notes: "",
+    },
   });
 
   const createMember = useCreateMember({
@@ -52,22 +62,34 @@ export default function MemberCreate() {
       },
       onError: () => {
         toast({ title: "Error adding member", variant: "destructive" });
-      }
-    }
+      },
+    },
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    createMember.mutate({ data: {
-      ...values,
-      email: values.email || undefined,
-      joinDate: values.joinDate || undefined,
-      isActive: true
-    } as Parameters<typeof createMember.mutate>[0]["data"]});
+    const now = new Date().toISOString();
+    createMember.mutate({
+      data: {
+        name: values.name,
+        employeeId: values.employeeId || undefined,
+        department: values.department || undefined,
+        classification: values.classification || undefined,
+        phone: values.phone || undefined,
+        email: values.email || undefined,
+        joinDate: values.joinDate || undefined,
+        seniorityDate: values.seniorityDate || undefined,
+        shift: (values.shift as "days" | "afternoons" | "nights" | "rotating" | undefined) || undefined,
+        duesStatus: (values.duesStatus as "current" | "arrears" | "exempt" | undefined) || "current",
+        signedAt: values.cardSigned ? now : undefined,
+        notes: values.notes || undefined,
+        isActive: true,
+      } as Parameters<typeof createMember.mutate>[0]["data"],
+    });
   }
 
   return (
     <MobileLayout>
-      <div className="p-4 sm:p-6 space-y-6 pb-24">
+      <div className="p-4 sm:p-6 space-y-5 pb-24">
         <header className="flex items-center gap-3">
           <Link href="/members" className="w-10 h-10 flex items-center justify-center bg-card rounded-full shadow-sm border border-border">
             <ChevronLeft className="w-5 h-5" />
@@ -77,121 +99,150 @@ export default function MemberCreate() {
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+
+            {/* ── Identity ── */}
             <Card className="shadow-sm border-border">
               <CardContent className="p-4 space-y-4">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Identity</p>
+                <FormField control={form.control} name="name" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Full Name *</FormLabel>
+                    <FormControl><Input placeholder="Jane Doe" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField control={form.control} name="employeeId" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Full Name *</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Jane Doe" {...field} />
-                      </FormControl>
+                      <FormLabel>Employee ID</FormLabel>
+                      <FormControl><Input placeholder="E12345" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
-                  )}
-                />
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="employeeId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Employee ID</FormLabel>
+                  )} />
+                  <FormField control={form.control} name="shift" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Shift</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <Input placeholder="E12345" {...field} />
+                          <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                         </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="joinDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Join Date</FormLabel>
-                        <FormControl>
-                          <Input type="date" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                        <SelectContent>
+                          <SelectItem value="days">Days</SelectItem>
+                          <SelectItem value="afternoons">Afternoons</SelectItem>
+                          <SelectItem value="nights">Nights</SelectItem>
+                          <SelectItem value="rotating">Rotating</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="department"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Department</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Assembly" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="classification"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Classification</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Welder I" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField control={form.control} name="department" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Department</FormLabel>
+                      <FormControl><Input placeholder="Assembly" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="classification" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Classification</FormLabel>
+                      <FormControl><Input placeholder="Welder I" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
                 </div>
 
-                <FormField
-                  control={form.control}
-                  name="phone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Phone</FormLabel>
-                      <FormControl>
-                        <Input type="tel" placeholder="(555) 123-4567" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <FormField control={form.control} name="phone" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone</FormLabel>
+                    <FormControl><Input type="tel" placeholder="(555) 123-4567" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
 
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input type="email" placeholder="jane@example.com" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <FormField control={form.control} name="email" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl><Input type="email" placeholder="jane@example.com" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </CardContent>
+            </Card>
 
-                <FormField
-                  control={form.control}
-                  name="notes"
-                  render={({ field }) => (
+            {/* ── Seniority & Dues ── */}
+            <Card className="shadow-sm border-border">
+              <CardContent className="p-4 space-y-4">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Seniority & Dues</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField control={form.control} name="joinDate" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Notes</FormLabel>
-                      <FormControl>
-                        <Textarea placeholder="Any additional context..." rows={3} {...field} />
-                      </FormControl>
+                      <FormLabel>Join Date</FormLabel>
+                      <FormControl><Input type="date" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
-                  )}
-                />
+                  )} />
+                  <FormField control={form.control} name="seniorityDate" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Seniority Date</FormLabel>
+                      <FormControl><Input type="date" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                </div>
+
+                <FormField control={form.control} name="duesStatus" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Dues Status</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="current">Current</SelectItem>
+                        <SelectItem value="arrears">In Arrears</SelectItem>
+                        <SelectItem value="exempt">Exempt</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+
+                <FormField control={form.control} name="cardSigned" render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/40 border border-border">
+                      <FormControl>
+                        <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                      </FormControl>
+                      <div className="flex items-center gap-2">
+                        <UserCheck className="w-4 h-4 text-green-600" />
+                        <div>
+                          <FormLabel className="cursor-pointer text-sm font-semibold">Union Card Signed</FormLabel>
+                          <p className="text-xs text-muted-foreground">Member has signed their union card</p>
+                        </div>
+                      </div>
+                    </div>
+                  </FormItem>
+                )} />
+              </CardContent>
+            </Card>
+
+            {/* ── Notes ── */}
+            <Card className="shadow-sm border-border">
+              <CardContent className="p-4">
+                <FormField control={form.control} name="notes" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Notes</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Any additional context..." rows={3} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
               </CardContent>
             </Card>
 

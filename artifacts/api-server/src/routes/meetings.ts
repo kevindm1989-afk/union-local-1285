@@ -10,14 +10,22 @@ const router = Router();
 
 // ─── Schemas ─────────────────────────────────────────────────────────────────
 
+const agendaItemSchema = z.object({
+  id: z.string(),
+  text: z.string().min(1).max(1000),
+  done: z.boolean().default(false),
+});
+
 const createMeetingSchema = z.object({
   title: z.string().min(1).max(200),
   type: z.enum(["executive", "general", "stewards"]),
   date: z.string().datetime(),
   location: z.string().min(1).max(500),
   agenda: z.string().max(10000).nullable().optional(),
+  agendaItems: z.array(agendaItemSchema).default([]),
   minutes: z.string().max(50000).nullable().optional(),
   attendees: z.array(z.number().int().positive()).default([]),
+  attendanceData: z.record(z.string(), z.enum(["present", "absent", "excused"])).default({}),
 });
 
 const updateMeetingSchema = createMeetingSchema.partial();
@@ -30,9 +38,11 @@ function formatMeeting(m: typeof meetingsTable.$inferSelect) {
     date: m.date.toISOString(),
     location: m.location ?? null,
     agenda: m.agenda ?? null,
+    agendaItems: (m.agendaItems as { id: string; text: string; done: boolean }[]) ?? [],
     minutes: m.minutes ?? null,
     minutesPublished: m.minutesPublished ?? "draft",
     attendees: (m.attendees as number[]) ?? [],
+    attendanceData: (m.attendanceData as Record<string, "present" | "absent" | "excused">) ?? {},
     createdBy: m.createdBy ?? null,
     createdAt: m.createdAt.toISOString(),
     updatedAt: m.updatedAt.toISOString(),
@@ -77,6 +87,9 @@ router.post("/", requirePermission("meetings.manage"), asyncHandler(async (req: 
       date: new Date(body.date),
       location: body.location ?? null,
       agenda: body.agenda ?? null,
+      agendaItems: body.agendaItems ?? [],
+      attendees: body.attendees ?? [],
+      attendanceData: body.attendanceData ?? {},
       createdBy: req.session?.userId ?? null,
     })
     .returning();
@@ -119,8 +132,10 @@ router.patch("/:id", requirePermission("meetings.manage"), asyncHandler(async (r
   if (body.date !== undefined) updates.date = new Date(body.date);
   if (body.location !== undefined) updates.location = body.location;
   if (body.agenda !== undefined) updates.agenda = body.agenda;
+  if (body.agendaItems !== undefined) updates.agendaItems = body.agendaItems;
   if (body.minutes !== undefined) updates.minutes = body.minutes;
   if (body.attendees !== undefined) updates.attendees = body.attendees;
+  if (body.attendanceData !== undefined) updates.attendanceData = body.attendanceData;
 
   const [meeting] = await db
     .update(meetingsTable)

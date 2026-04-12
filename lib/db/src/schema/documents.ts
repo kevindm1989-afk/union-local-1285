@@ -13,6 +13,7 @@ export const documentsTable = pgTable("documents", {
   effectiveDate: varchar("effective_date", { length: 20 }),
   expirationDate: varchar("expiration_date", { length: 20 }),
   notes: text("notes"),
+  stewardOnly: boolean("steward_only").notNull().default(false),
   uploadedBy: integer("uploaded_by"),
   uploadedAt: timestamp("uploaded_at", { withTimezone: true }).notNull().defaultNow(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

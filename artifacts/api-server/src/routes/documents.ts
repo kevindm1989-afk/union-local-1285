@@ -1,6 +1,6 @@
 import { Router, type Request } from "express";
 import { db, documentsTable } from "@workspace/db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import { requirePermission } from "../lib/permissions";
 import { asyncHandler } from "../lib/asyncHandler";
 
@@ -22,6 +22,7 @@ function formatDocument(d: typeof documentsTable.$inferSelect) {
     effectiveDate: d.effectiveDate ?? null,
     expirationDate: d.expirationDate ?? null,
     notes: d.notes ?? null,
+    stewardOnly: d.stewardOnly ?? false,
     uploadedBy: d.uploadedBy ?? null,
     uploadedAt: d.uploadedAt.toISOString(),
     createdAt: d.createdAt.toISOString(),
@@ -31,12 +32,20 @@ function formatDocument(d: typeof documentsTable.$inferSelect) {
 
 router.get("/", asyncHandler(async (req: Request, res) => {
   const { category } = req.query;
+  const isSteward = req.session?.role && ["admin", "steward", "chief_steward", "chair"].includes(req.session.role);
+
+  const conditions = [];
+  if (category && typeof category === "string" && VALID_CATEGORIES.includes(category as typeof VALID_CATEGORIES[number])) {
+    conditions.push(eq(documentsTable.category, category));
+  }
+  if (!isSteward) {
+    conditions.push(eq(documentsTable.stewardOnly, false));
+  }
+
   const docs = await db
     .select()
     .from(documentsTable)
-    .where(category && typeof category === "string" && VALID_CATEGORIES.includes(category as typeof VALID_CATEGORIES[number])
-      ? eq(documentsTable.category, category)
-      : undefined)
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
     .orderBy(desc(documentsTable.uploadedAt));
   res.json(docs.map(formatDocument));
 }));
@@ -69,6 +78,7 @@ router.post("/", requirePermission("documents.upload"), asyncHandler(async (req:
       effectiveDate: effectiveDate ?? null,
       expirationDate: expirationDate ?? null,
       notes: notes ?? null,
+      stewardOnly: req.body.stewardOnly === true,
       uploadedBy: req.session?.userId ?? null,
     })
     .returning();
@@ -98,6 +108,7 @@ router.patch("/:id", requirePermission("documents.upload"), asyncHandler(async (
   if (effectiveDate !== undefined) updates.effectiveDate = effectiveDate;
   if (expirationDate !== undefined) updates.expirationDate = expirationDate;
   if (notes !== undefined) updates.notes = notes;
+  if (req.body.stewardOnly !== undefined) updates.stewardOnly = req.body.stewardOnly === true;
 
   const [doc] = await db.update(documentsTable).set(updates).where(eq(documentsTable.id, id)).returning();
   if (!doc) { res.status(404).json({ error: "Not found" }); return; }

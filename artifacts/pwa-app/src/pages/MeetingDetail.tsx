@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { MobileLayout } from "@/components/layout/MobileLayout";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Calendar, MapPin, Trash2, Edit3, Check, X } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, Trash2, Edit3, Check, X, Plus, CheckCircle2, Circle } from "lucide-react";
 import { Link } from "wouter";
 import { usePermissions } from "@/App";
 import { useToast } from "@/hooks/use-toast";
@@ -12,6 +12,12 @@ const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 type MeetingType = "executive" | "general" | "stewards";
 
+interface AgendaItem {
+  id: string;
+  text: string;
+  done: boolean;
+}
+
 interface Meeting {
   id: number;
   title: string;
@@ -19,6 +25,7 @@ interface Meeting {
   date: string;
   location: string | null;
   agenda: string | null;
+  agendaItems: AgendaItem[] | null;
   minutes: string | null;
   minutesPublished: string;
   attendees: number[];
@@ -61,6 +68,8 @@ export default function MeetingDetail() {
   const [minutesDraft, setMinutesDraft] = useState("");
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [newItemText, setNewItemText] = useState("");
+  const [savingAgenda, setSavingAgenda] = useState(false);
 
   const canManage = can("meetings.manage");
 
@@ -86,6 +95,43 @@ export default function MeetingDetail() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const patchAgendaItems = async (items: AgendaItem[]) => {
+    setSavingAgenda(true);
+    try {
+      const r = await fetch(`${BASE}/api/meetings/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ agendaItems: items }),
+      });
+      if (!r.ok) throw new Error();
+      qc.invalidateQueries({ queryKey: ["meeting", id] });
+    } catch {
+      toast({ title: "Save failed", variant: "destructive" });
+    } finally {
+      setSavingAgenda(false);
+    }
+  };
+
+  const agendaItems: AgendaItem[] = meeting?.agendaItems ?? [];
+
+  const addAgendaItem = () => {
+    if (!newItemText.trim()) return;
+    const updated = [...agendaItems, { id: crypto.randomUUID(), text: newItemText.trim(), done: false }];
+    setNewItemText("");
+    patchAgendaItems(updated);
+  };
+
+  const toggleAgendaItem = (itemId: string) => {
+    const updated = agendaItems.map((item) => item.id === itemId ? { ...item, done: !item.done } : item);
+    patchAgendaItems(updated);
+  };
+
+  const deleteAgendaItem = (itemId: string) => {
+    const updated = agendaItems.filter((item) => item.id !== itemId);
+    patchAgendaItems(updated);
   };
 
   const handleDelete = async () => {
@@ -206,13 +252,75 @@ export default function MeetingDetail() {
 
         {/* Agenda */}
         {tab === "agenda" && (
-          <div className="bg-card border border-border rounded-2xl p-4 min-h-[200px]">
-            {meeting.agenda ? (
-              <pre className="text-sm text-foreground whitespace-pre-wrap font-sans leading-relaxed">
-                {meeting.agenda}
-              </pre>
+          <div className="space-y-3">
+            {/* Structured agenda items */}
+            {agendaItems.length > 0 ? (
+              <div className="space-y-2">
+                {agendaItems.map((item, idx) => (
+                  <div key={item.id} className={cn(
+                    "flex items-start gap-3 p-3.5 rounded-xl border transition-colors",
+                    item.done ? "bg-muted/40 border-muted" : "bg-card border-border"
+                  )}>
+                    <button
+                      onClick={() => canManage && toggleAgendaItem(item.id)}
+                      className={cn("shrink-0 mt-0.5", !canManage && "pointer-events-none")}
+                    >
+                      {item.done
+                        ? <CheckCircle2 className="w-5 h-5 text-green-500" />
+                        : <Circle className="w-5 h-5 text-muted-foreground" />
+                      }
+                    </button>
+                    <span className={cn("flex-1 text-sm leading-snug", item.done && "line-through text-muted-foreground")}>
+                      <span className="text-[10px] font-bold text-muted-foreground mr-1.5">{idx + 1}.</span>
+                      {item.text}
+                    </span>
+                    {canManage && (
+                      <button onClick={() => deleteAgendaItem(item.id)} className="shrink-0 text-muted-foreground hover:text-destructive transition-colors">
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
             ) : (
-              <p className="text-sm text-muted-foreground italic text-center py-8">No agenda set</p>
+              !canManage && <div className="bg-card border border-border rounded-2xl p-4 min-h-[120px] flex items-center justify-center">
+                <p className="text-sm text-muted-foreground italic">No agenda items set</p>
+              </div>
+            )}
+
+            {/* Fallback: legacy plain-text agenda */}
+            {!agendaItems.length && meeting.agenda && (
+              <div className="bg-muted rounded-2xl p-4">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Agenda Notes</p>
+                <pre className="text-sm text-foreground whitespace-pre-wrap font-sans leading-relaxed">{meeting.agenda}</pre>
+              </div>
+            )}
+
+            {/* Add item input (stewards/managers only) */}
+            {canManage && (
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newItemText}
+                  onChange={(e) => setNewItemText(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addAgendaItem(); } }}
+                  placeholder="Add agenda item..."
+                  className="flex-1 h-11 px-4 rounded-xl bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+                <button
+                  onClick={addAgendaItem}
+                  disabled={!newItemText.trim() || savingAgenda}
+                  className="h-11 w-11 rounded-xl bg-primary text-primary-foreground flex items-center justify-center shrink-0 disabled:opacity-50 transition-opacity"
+                >
+                  <Plus className="w-5 h-5" />
+                </button>
+              </div>
+            )}
+
+            {agendaItems.length > 0 && (
+              <p className="text-xs text-muted-foreground text-center">
+                {agendaItems.filter(i => i.done).length} of {agendaItems.length} items covered
+              </p>
             )}
           </div>
         )}

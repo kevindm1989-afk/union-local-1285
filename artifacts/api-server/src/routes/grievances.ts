@@ -68,6 +68,10 @@ function formatGrievance(g: typeof grievancesTable.$inferSelect, memberName?: st
     step: g.step,
     status: g.status,
     accommodationRequest: g.accommodationRequest ?? false,
+    grievanceType: g.grievanceType ?? null,
+    incidentDate: g.incidentDate ?? null,
+    remedyRequested: g.remedyRequested ?? null,
+    outcome: g.outcome ?? "pending",
     filedDate: g.filedDate,
     dueDate: g.dueDate ?? null,
     resolvedDate: g.resolvedDate ?? null,
@@ -148,6 +152,12 @@ router.post("/", requirePermission("grievances.file"), asyncHandler(async (req, 
       dueDate,
       notes: d.notes ?? null,
       accommodationRequest: (d as Record<string, unknown>).accommodationRequest as boolean ?? false,
+      grievanceType: (d as Record<string, unknown>).grievanceType as string ?? null,
+      incidentDate: (d as Record<string, unknown>).incidentDate
+        ? new Date((d as Record<string, unknown>).incidentDate as string).toISOString().split("T")[0]
+        : null,
+      remedyRequested: (d as Record<string, unknown>).remedyRequested as string ?? null,
+      outcome: (d as Record<string, unknown>).outcome as string ?? "pending",
     })
     .returning();
 
@@ -251,6 +261,19 @@ router.patch("/:id", requirePermission("grievances.file"), asyncHandler(async (r
   if (d.notes !== undefined) updates.notes = d.notes;
   if ((d as Record<string, unknown>).accommodationRequest !== undefined) {
     updates.accommodationRequest = (d as Record<string, unknown>).accommodationRequest;
+  }
+  if ((d as Record<string, unknown>).grievanceType !== undefined) {
+    updates.grievanceType = (d as Record<string, unknown>).grievanceType;
+  }
+  if ((d as Record<string, unknown>).incidentDate !== undefined) {
+    const raw = (d as Record<string, unknown>).incidentDate;
+    updates.incidentDate = raw ? new Date(raw as string).toISOString().split("T")[0] : null;
+  }
+  if ((d as Record<string, unknown>).remedyRequested !== undefined) {
+    updates.remedyRequested = (d as Record<string, unknown>).remedyRequested;
+  }
+  if ((d as Record<string, unknown>).outcome !== undefined) {
+    updates.outcome = (d as Record<string, unknown>).outcome;
   }
 
   // Handle step change — recalculate due_date unless explicitly provided

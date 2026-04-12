@@ -40,11 +40,14 @@ const baseUpdateFields = {
 
 /** Additional fields only admin / steward / chair roles may apply */
 const privilegedUpdateFields = {
-  isActive:     z.boolean().optional(),
-  notes:        z.string().max(10000).nullable().optional(),
-  duesStatus:   z.enum(DUES_STATUS).nullable().optional(),
-  duesLastPaid: z.string().nullable().optional(),
-  seniorityDate: z.string().nullable().optional(),
+  isActive:            z.boolean().optional(),
+  notes:               z.string().max(10000).nullable().optional(),
+  duesStatus:          z.enum(DUES_STATUS).nullable().optional(),
+  duesLastPaid:        z.string().nullable().optional(),
+  seniorityDate:       z.string().nullable().optional(),
+  seniorityRank:       z.number().int().positive().nullable().optional(),
+  accommodationActive: z.boolean().optional(),
+  stewardNotes:        z.string().max(10000).nullable().optional(),
 };
 
 const PatchMemberBodySchema = z.object({
@@ -316,8 +319,8 @@ router.patch("/:id/reactivate", requirePermission("members.edit"), asyncHandler(
   res.json(formatMember(updated));
 }));
 
-function formatMember(m: typeof membersTable.$inferSelect) {
-  return {
+function formatMember(m: typeof membersTable.$inferSelect, includePrivileged = true) {
+  const base = {
     id: m.id,
     name: m.name,
     employeeId: m.employeeId ?? null,
@@ -336,8 +339,20 @@ function formatMember(m: typeof membersTable.$inferSelect) {
     smsEnabled: m.smsEnabled ?? false,
     emailEnabled: m.emailEnabled ?? true,
     pushEnabled: m.pushEnabled ?? true,
+    cardSigned: !!m.signedAt,
+    signedAt: m.signedAt?.toISOString() ?? null,
     createdAt: m.createdAt.toISOString(),
     updatedAt: m.updatedAt.toISOString(),
+  };
+  if (!includePrivileged) return base;
+  return {
+    ...base,
+    seniorityRank: m.seniorityRank ?? null,
+    accommodationActive: m.accommodationActive ?? false,
+    stewardNotes: m.stewardNotes ?? null,
+    engagementLevel: m.engagementLevel ?? "unknown",
+    shopFloorLeader: m.shopFloorLeader ?? false,
+    organizingNotes: m.organizingNotes ?? null,
   };
 }
 

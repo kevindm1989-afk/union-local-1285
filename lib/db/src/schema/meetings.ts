@@ -10,6 +10,8 @@ export const meetingsTable = pgTable("meetings", {
   minutes: text("minutes"),
   minutesPublished: varchar("minutes_published", { length: 10 }).default("draft"),
   attendees: jsonb("attendees").$type<number[]>().default([]),
+  agendaItems: jsonb("agenda_items").$type<{ id: string; text: string; done: boolean }[]>().default([]),
+  attendanceData: jsonb("attendance_data").$type<Record<string, "present" | "absent" | "excused">>().default({}),
   createdBy: integer("created_by"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

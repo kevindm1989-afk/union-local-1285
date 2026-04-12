@@ -13,11 +13,15 @@ import {
 } from "@workspace/api-zod";
 import { asyncHandler } from "../lib/asyncHandler";
 
+const ANNOUNCEMENT_CATEGORIES = ["general", "urgent", "contract", "meeting", "action", "safety_alert", "strike_action"] as const;
+const URGENCY_LEVELS = ["normal", "high", "critical"] as const;
+
 const updateAnnouncementSchema = z.object({
   title: z.string().min(1).max(200).optional(),
   content: z.string().min(1).optional(),
-  category: z.enum(["general", "urgent", "contract", "meeting", "action"]).optional(),
+  category: z.enum(ANNOUNCEMENT_CATEGORIES).optional(),
   isUrgent: z.boolean().optional(),
+  urgencyLevel: z.enum(URGENCY_LEVELS).optional(),
 });
 
 const router = Router();
@@ -47,17 +51,23 @@ router.post("/", requirePermission("bulletins.post"), asyncHandler(async (req, r
   }
 
   const d = parsed.data;
+  const category = (d.category as typeof ANNOUNCEMENT_CATEGORIES[number]) ?? "general";
+  const isUrgent = d.isUrgent ?? (category === "urgent" || category === "safety_alert" || category === "strike_action");
+  const urgencyLevel = (d as Record<string, unknown>).urgencyLevel as string
+    ?? (category === "strike_action" || category === "safety_alert" ? "critical" : isUrgent ? "high" : "normal");
+
   const [announcement] = await db
     .insert(announcementsTable)
     .values({
       title: d.title,
       content: d.content,
-      category: d.category ?? "general",
-      isUrgent: d.isUrgent ?? false,
+      category,
+      isUrgent,
+      urgencyLevel,
     })
     .returning();
 
-  if (announcement.isUrgent) {
+  if (announcement.isUrgent || announcement.urgencyLevel === "critical" || announcement.urgencyLevel === "high") {
     notifyUrgentBulletin({ id: announcement.id, title: announcement.title, content: announcement.content }).catch(() => {});
   }
 
@@ -103,6 +113,7 @@ router.patch("/:id", requirePermission("bulletins.manage"), asyncHandler(async (
   if (d.content !== undefined) updates.content = d.content;
   if (d.category !== undefined) updates.category = d.category;
   if (d.isUrgent !== undefined) updates.isUrgent = d.isUrgent;
+  if (d.urgencyLevel !== undefined) updates.urgencyLevel = d.urgencyLevel;
 
   const [announcement] = await db
     .update(announcementsTable)
@@ -136,6 +147,7 @@ function formatAnnouncement(a: typeof announcementsTable.$inferSelect) {
     content: a.content,
     category: a.category,
     isUrgent: a.isUrgent,
+    urgencyLevel: a.urgencyLevel ?? "normal",
     publishedAt: a.publishedAt.toISOString(),
     createdAt: a.createdAt.toISOString(),
     updatedAt: a.updatedAt.toISOString(),

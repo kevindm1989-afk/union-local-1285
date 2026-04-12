@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, date, integer, boolean, index } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, date, integer, boolean, varchar, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -19,6 +19,10 @@ export const grievancesTable = pgTable("grievances", {
   resolution: text("resolution"),
   notes: text("notes"),
   accommodationRequest: boolean("accommodation_request").notNull().default(false),
+  grievanceType: varchar("grievance_type", { length: 30 }),
+  incidentDate: date("incident_date"),
+  remedyRequested: text("remedy_requested"),
+  outcome: varchar("outcome", { length: 20 }).default("pending"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (table) => ({

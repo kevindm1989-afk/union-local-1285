@@ -232,16 +232,38 @@ export default function CbaAssistant() {
         {showConvList && (
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
             {conversations.length === 0 && !convLoading ? (
-              <div className="text-center py-16 text-muted-foreground space-y-3">
-                <Bot className="w-12 h-12 mx-auto opacity-20" />
-                <p className="font-medium">No conversations yet</p>
-                <p className="text-sm">
-                  Ask me anything about your Collective Agreement
-                </p>
-                <Button onClick={startNewConversation} className="mt-2 gap-2">
-                  <Plus className="w-4 h-4" />
-                  Start a Chat
-                </Button>
+              <div className="space-y-5">
+                <div className="text-center py-8 text-muted-foreground space-y-3">
+                  <Bot className="w-12 h-12 mx-auto opacity-20" />
+                  <p className="font-medium">CBA Assistant</p>
+                  <p className="text-sm max-w-[260px] mx-auto">Ask anything about your collective agreement, rights, or Ontario labour law</p>
+                  <Button onClick={startNewConversation} className="mt-2 gap-2">
+                    <Plus className="w-4 h-4" />
+                    Start a Chat
+                  </Button>
+                </div>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">Quick Questions</p>
+                  <div className="space-y-2">
+                    {[
+                      { label: "Overtime rights", q: "What are my overtime rights and how is overtime calculated?" },
+                      { label: "Grievance procedure", q: "Walk me through the grievance procedure step by step." },
+                      { label: "Seniority & job postings", q: "How does seniority work for job postings and shift picks?" },
+                      { label: "Sick leave entitlement", q: "How many sick days am I entitled to and how do I report absences?" },
+                      { label: "Discipline & just cause", q: "What does just cause mean and what are my rights during a disciplinary investigation?" },
+                      { label: "Accommodation rights", q: "What are my rights to workplace accommodation under the Human Rights Code?" },
+                      { label: "Strike vote rules", q: "What is the process for a legal strike vote in Ontario?" },
+                      { label: "Health & safety refusal", q: "Can I refuse unsafe work and what happens when I do?" },
+                    ].map(({ label, q }) => (
+                      <button key={q} onClick={async () => { await startNewConversation(); setTimeout(() => { setInput(q); inputRef.current?.focus(); }, 300); }}
+                        className="w-full text-left px-4 py-3 rounded-xl bg-card border border-border hover:border-primary/50 hover:bg-primary/5 transition-colors active:scale-[0.98]"
+                      >
+                        <span className="text-sm font-semibold text-foreground">{label}</span>
+                        <span className="text-xs text-muted-foreground block mt-0.5 line-clamp-1">{q}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             ) : (
               conversations.map((conv) => (

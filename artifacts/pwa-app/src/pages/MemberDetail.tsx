@@ -178,6 +178,10 @@ export default function MemberDetail() {
   const [smsEnabled, setSmsEnabled] = useState(false);
   const [emailEnabled, setEmailEnabled] = useState(true);
   const [pushEnabled, setPushEnabled] = useState(true);
+  const [seniorityRank, setSeniorityRank] = useState<string>("");
+  const [cardSigned, setCardSigned] = useState(false);
+  const [accommodationActive, setAccommodationActive] = useState(false);
+  const [stewardNotes, setStewardNotes] = useState("");
 
   // Files state
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -389,6 +393,10 @@ export default function MemberDetail() {
       setSmsEnabled((member as any).smsEnabled ?? false);
       setEmailEnabled((member as any).emailEnabled ?? true);
       setPushEnabled((member as any).pushEnabled ?? true);
+      setSeniorityRank((member as any).seniorityRank != null ? String((member as any).seniorityRank) : "");
+      setCardSigned((member as any).cardSigned ?? false);
+      setAccommodationActive((member as any).accommodationActive ?? false);
+      setStewardNotes((member as any).stewardNotes ?? "");
     }
   }, [member, editOpen]);
 
@@ -414,6 +422,10 @@ export default function MemberDetail() {
         smsEnabled,
         emailEnabled,
         pushEnabled,
+        seniorityRank: seniorityRank ? parseInt(seniorityRank) : null,
+        cardSigned,
+        accommodationActive,
+        stewardNotes: stewardNotes || null,
       } as any,
     });
   };
@@ -592,6 +604,19 @@ export default function MemberDetail() {
                 "Dues Last Paid",
                 format(new Date((member as any).duesLastPaid), "MMM d, yyyy")
               )}
+            {(member as any).seniorityRank != null && field("Seniority Rank", `#${(member as any).seniorityRank}`)}
+            {field(
+              "Card Signed",
+              (member as any).cardSigned
+                ? <span className="font-semibold text-green-600">Yes</span>
+                : <span className="font-semibold text-muted-foreground">No</span>
+            )}
+            {(member as any).accommodationActive != null && field(
+              "Accommodation",
+              (member as any).accommodationActive
+                ? <span className="font-semibold text-amber-600">Active</span>
+                : <span className="font-semibold text-muted-foreground">None</span>
+            )}
           </div>
         ) : null)}
 
@@ -599,9 +624,19 @@ export default function MemberDetail() {
         {(!isAdmin || activeTab === "overview") && member?.notes && (
           <div className="bg-muted/40 border border-border rounded-xl px-4 py-3">
             <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
-              Steward Notes
+              General Notes
             </p>
             <p className="text-sm whitespace-pre-wrap text-foreground">{member.notes}</p>
+          </div>
+        )}
+
+        {/* Steward-privileged notes */}
+        {(!isAdmin || activeTab === "overview") && can("members.edit") && (member as any).stewardNotes && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+            <p className="text-xs font-bold uppercase tracking-wider text-amber-700 mb-1.5">
+              🔒 Steward Notes (Private)
+            </p>
+            <p className="text-sm whitespace-pre-wrap text-foreground">{(member as any).stewardNotes}</p>
           </div>
         )}
 
@@ -1359,7 +1394,7 @@ export default function MemberDetail() {
 
             <div className="space-y-1.5">
               <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                Steward Notes
+                General Notes
               </label>
               <Textarea
                 value={notes}
@@ -1367,6 +1402,55 @@ export default function MemberDetail() {
                 placeholder="Any relevant notes..."
                 className="min-h-[80px] rounded-xl bg-card resize-none"
               />
+            </div>
+
+            {can("members.edit") && (
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  Steward Notes <span className="text-amber-600">(Private)</span>
+                </label>
+                <Textarea
+                  value={stewardNotes}
+                  onChange={(e) => setStewardNotes(e.target.value)}
+                  placeholder="Private notes visible only to stewards and above..."
+                  className="min-h-[80px] rounded-xl bg-card resize-none"
+                />
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  Seniority Rank
+                </label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={seniorityRank}
+                  onChange={(e) => setSeniorityRank(e.target.value)}
+                  placeholder="e.g. 42"
+                  className="h-12 rounded-xl bg-card"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">&nbsp;</label>
+                <div className="h-12 rounded-xl bg-card border border-input flex items-center gap-3 px-3">
+                  <Checkbox
+                    checked={cardSigned}
+                    onCheckedChange={(v) => setCardSigned(Boolean(v))}
+                    id="edit-card-signed"
+                  />
+                  <label htmlFor="edit-card-signed" className="text-sm font-medium cursor-pointer">Card Signed</label>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-card border border-border cursor-pointer" onClick={() => setAccommodationActive((v) => !v)}>
+              <Checkbox checked={accommodationActive} />
+              <div>
+                <p className="text-sm font-semibold">Accommodation Active</p>
+                <p className="text-xs text-muted-foreground">Member has an active disability accommodation</p>
+              </div>
             </div>
 
             {/* Notification Preferences */}

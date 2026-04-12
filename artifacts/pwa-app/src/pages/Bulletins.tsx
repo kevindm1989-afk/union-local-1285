@@ -8,10 +8,12 @@ import { Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { Bell, ChevronRight } from "lucide-react";
+import { Bell, ChevronRight, AlertTriangle, Siren } from "lucide-react";
 
 const categories = [
   { id: "all", label: "All" },
+  { id: "safety_alert", label: "Safety" },
+  { id: "strike_action", label: "Strike" },
   { id: "urgent", label: "Urgent" },
   { id: "contract", label: "Contract" },
   { id: "meeting", label: "Meeting" },
@@ -21,26 +23,86 @@ const categories = [
 
 const categoryColors: Record<string, string> = {
   urgent: "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400",
+  safety_alert: "bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400",
+  strike_action: "bg-red-100 text-red-900 border-red-300 dark:bg-red-900/40 dark:text-red-300",
   contract: "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400",
   meeting: "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400",
   action: "bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400",
   general: "bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800/50 dark:text-gray-300",
 };
 
+const categoryLabels: Record<string, string> = {
+  safety_alert: "Safety Alert",
+  strike_action: "Strike Action",
+  general: "General",
+  urgent: "Urgent",
+  contract: "Contract",
+  meeting: "Meeting",
+  action: "Action",
+};
+
+type Announcement = {
+  id: number;
+  title: string;
+  content: string;
+  category: string;
+  isUrgent: boolean;
+  urgencyLevel?: string;
+  publishedAt: string;
+};
+
+function EmergencyBanner({ item }: { item: Announcement }) {
+  const isStrike = item.category === "strike_action";
+  return (
+    <Link href={`/bulletins/${item.id}`}>
+      <div className={cn(
+        "rounded-2xl p-5 border-2 active:opacity-80 transition-opacity",
+        isStrike
+          ? "bg-red-700 border-red-800 text-white"
+          : "bg-orange-500 border-orange-600 text-white"
+      )}>
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+            {isStrike ? <Siren className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[9px] font-black uppercase tracking-widest opacity-80">
+                {isStrike ? "Strike Action" : "Safety Alert"}
+              </span>
+            </div>
+            <p className="font-black text-base leading-snug">{item.title}</p>
+            <p className="text-xs opacity-70 mt-1.5 line-clamp-2 leading-relaxed">{item.content}</p>
+            <p className="text-xs opacity-60 mt-2">{format(new Date(item.publishedAt), "MMM d, yyyy · h:mm a")}</p>
+          </div>
+          <ChevronRight className="w-5 h-5 opacity-60 mt-0.5 shrink-0" />
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 export default function Bulletins() {
   const [filter, setFilter] = useState("all");
 
   const { data: announcements, isLoading } = useListAnnouncements(
-    { category: filter === "all" ? undefined : filter as any },
-    { query: { queryKey: getListAnnouncementsQueryKey({ category: filter === "all" ? undefined : filter as any }) } }
+    { category: filter === "all" ? undefined : (filter as Parameters<typeof useListAnnouncements>[0]["category"]) },
+    { query: { queryKey: getListAnnouncementsQueryKey({ category: filter === "all" ? undefined : (filter as Parameters<typeof useListAnnouncements>[0]["category"]) }) } }
   );
 
-  const urgentItems = announcements?.filter((a) => a.isUrgent) ?? [];
-  const regularItems = announcements?.filter((a) => !a.isUrgent) ?? [];
+  const criticalItems = (announcements as Announcement[] | undefined)?.filter(
+    (a) => a.urgencyLevel === "critical" || a.category === "safety_alert" || a.category === "strike_action"
+  ) ?? [];
+  const urgentItems = (announcements as Announcement[] | undefined)?.filter(
+    (a) => a.isUrgent && a.urgencyLevel !== "critical" && a.category !== "safety_alert" && a.category !== "strike_action"
+  ) ?? [];
+  const regularItems = (announcements as Announcement[] | undefined)?.filter(
+    (a) => !a.isUrgent && a.urgencyLevel !== "critical" && a.category !== "safety_alert" && a.category !== "strike_action"
+  ) ?? [];
 
   return (
     <MobileLayout>
-      <div className="p-4 sm:p-5 space-y-5">
+      <div className="p-4 sm:p-5 space-y-5 pb-8">
         <header>
           <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Bulletins</h1>
           <p className="text-muted-foreground text-sm mt-0.5">Union announcements & news</p>
@@ -64,6 +126,15 @@ export default function Bulletins() {
           </div>
         ) : (
           <div className="space-y-5">
+            {criticalItems.length > 0 && (
+              <section className="space-y-2.5">
+                <p className="text-xs font-bold uppercase tracking-widest text-red-600 flex items-center gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5" /> Emergency
+                </p>
+                {criticalItems.map((a) => <EmergencyBanner key={a.id} item={a} />)}
+              </section>
+            )}
+
             {urgentItems.length > 0 && (
               <section className="space-y-2.5">
                 <p className="text-xs font-bold uppercase tracking-widest text-red-600">Urgent</p>
@@ -75,7 +146,7 @@ export default function Bulletins() {
                           <div className="flex items-center gap-2 mb-1.5">
                             <Bell className="w-3.5 h-3.5 text-red-600 shrink-0" />
                             <span className={cn("text-[9px] uppercase font-bold px-1.5 py-0.5 rounded border", categoryColors[a.category])}>
-                              {a.category}
+                              {categoryLabels[a.category] ?? a.category}
                             </span>
                           </div>
                           <p className="font-bold text-foreground leading-snug line-clamp-2 text-sm">{a.title}</p>
@@ -91,15 +162,17 @@ export default function Bulletins() {
 
             {regularItems.length > 0 && (
               <section className="space-y-2.5">
-                {urgentItems.length > 0 && <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">All Bulletins</p>}
+                {(urgentItems.length > 0 || criticalItems.length > 0) && (
+                  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">All Bulletins</p>
+                )}
                 {regularItems.map((a) => (
                   <Link key={a.id} href={`/bulletins/${a.id}`}>
                     <div className="bg-card border border-border rounded-xl p-4 active:opacity-80 transition-opacity">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1.5">
-                            <span className={cn("text-[9px] uppercase font-bold px-1.5 py-0.5 rounded border", categoryColors[a.category])}>
-                              {a.category}
+                            <span className={cn("text-[9px] uppercase font-bold px-1.5 py-0.5 rounded border", categoryColors[a.category] ?? categoryColors.general)}>
+                              {categoryLabels[a.category] ?? a.category}
                             </span>
                           </div>
                           <p className="font-semibold text-foreground leading-snug line-clamp-2 text-sm">{a.title}</p>
