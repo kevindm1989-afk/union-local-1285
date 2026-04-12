@@ -12,6 +12,19 @@ if (missing.length > 0) {
   process.exit(1);
 }
 
+// AI assistant requires either a direct Anthropic key or the Replit AI proxy key.
+const hasAnthropicKey =
+  process.env.ANTHROPIC_API_KEY || process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY;
+if (!hasAnthropicKey) {
+  console.error(
+    'FATAL: Missing Anthropic API key. ' +
+    'Set ANTHROPIC_API_KEY via: flyctl secrets set ANTHROPIC_API_KEY=sk-ant-...'
+  );
+  process.exit(1);
+}
+
+console.log('✅ All required environment variables are set');
+
 // Warn (but don't crash) if optional services are unconfigured
 const dbUrl = process.env.NEON_DATABASE_URL || process.env.DATABASE_URL || process.env.PG_URL;
 if (!dbUrl) {
