@@ -591,13 +591,17 @@ export default function MemberDetail() {
             {field(
               "Dues Status",
               <span className={
-                (member as any).duesStatus === "delinquent"
+                (member as any).duesStatus === "arrears"
                   ? "font-semibold text-red-600"
-                  : (member as any).duesStatus === "suspended"
+                  : (member as any).duesStatus === "exempt"
                   ? "font-semibold text-amber-600"
                   : "font-semibold text-green-600"
               }>
-                {(member as any).duesStatus ? (member as any).duesStatus.charAt(0).toUpperCase() + (member as any).duesStatus.slice(1) : "Current"}
+                {(member as any).duesStatus === "arrears"
+                  ? "In Arrears"
+                  : (member as any).duesStatus === "exempt"
+                  ? "Exempt"
+                  : "Current"}
               </span>
             )}
             {(member as any).duesLastPaid &&
@@ -1333,8 +1337,7 @@ export default function MemberDetail() {
                 className="flex h-12 w-full rounded-xl border border-input bg-card px-3 py-2 text-sm ring-offset-background"
               >
                 <option value="current">Current</option>
-                <option value="delinquent">Delinquent</option>
-                <option value="suspended">Suspended</option>
+                <option value="arrears">In Arrears</option>
                 <option value="exempt">Exempt</option>
               </select>
             </div>

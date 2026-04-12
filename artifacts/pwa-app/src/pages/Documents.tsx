@@ -336,7 +336,7 @@ export default function Documents() {
                           <div className="flex items-center gap-1.5">
                           <p className="font-semibold text-foreground text-sm leading-tight">{doc.title}</p>
                           {(doc as any).stewardOnly && (
-                            <Lock className="w-3 h-3 text-amber-600 shrink-0" title="Stewards only" />
+                            <Lock className="w-3 h-3 text-amber-600 shrink-0" aria-label="Stewards only" />
                           )}
                         </div>
                         {doc.effectiveDate && (

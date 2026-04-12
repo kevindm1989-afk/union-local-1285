@@ -3,6 +3,7 @@ import { MobileLayout } from "@/components/layout/MobileLayout";
 import {
   useListAnnouncements,
   getListAnnouncementsQueryKey,
+  type ListAnnouncementsParams,
 } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -85,9 +86,10 @@ function EmergencyBanner({ item }: { item: Announcement }) {
 export default function Bulletins() {
   const [filter, setFilter] = useState("all");
 
+  const categoryParam = filter === "all" ? undefined : (filter as ListAnnouncementsParams["category"]);
   const { data: announcements, isLoading } = useListAnnouncements(
-    { category: filter === "all" ? undefined : (filter as Parameters<typeof useListAnnouncements>[0]["category"]) },
-    { query: { queryKey: getListAnnouncementsQueryKey({ category: filter === "all" ? undefined : (filter as Parameters<typeof useListAnnouncements>[0]["category"]) }) } }
+    { category: categoryParam },
+    { query: { queryKey: getListAnnouncementsQueryKey({ category: categoryParam }) } }
   );
 
   const criticalItems = (announcements as Announcement[] | undefined)?.filter(
