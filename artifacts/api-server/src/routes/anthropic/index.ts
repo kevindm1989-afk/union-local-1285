@@ -1,8 +1,8 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { db, conversations, messages } from "@workspace/db";
 import { eq, asc, and } from "drizzle-orm";
-import { anthropic } from "@workspace/integrations-anthropic-ai";
-import { ANTHROPIC_MODEL } from "../../lib/anthropic/constants";
+import { ai } from "../../lib/gemini/client";
+import { GEMINI_MODEL, GEMINI_MAX_TOKENS } from "../../lib/anthropic/constants";
 import { SendAnthropicMessageBody } from "@workspace/api-zod";
 import { aiChatLimiter } from "../../lib/rateLimiters";
 import { asyncHandler } from "../../lib/asyncHandler";
@@ -406,17 +406,23 @@ router.post("/conversations/:id/messages", aiChatLimiter, asyncHandler(async (re
 
     let fullResponse = "";
 
-    const stream = anthropic.messages.stream({
-      model: ANTHROPIC_MODEL,
-      max_tokens: 8192,
-      system: SYSTEM_PROMPT,
-      messages: chatMessages,
+    const stream = await ai.models.generateContentStream({
+      model: GEMINI_MODEL,
+      contents: chatMessages.map((m) => ({
+        role: m.role === "assistant" ? "model" : "user",
+        parts: [{ text: m.content }],
+      })),
+      config: {
+        maxOutputTokens: GEMINI_MAX_TOKENS,
+        systemInstruction: SYSTEM_PROMPT,
+      },
     });
 
-    for await (const event of stream) {
-      if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-        fullResponse += event.delta.text;
-        res.write(`data: ${JSON.stringify({ content: event.delta.text })}\n\n`);
+    for await (const chunk of stream) {
+      const text = chunk.text;
+      if (text) {
+        fullResponse += text;
+        res.write(`data: ${JSON.stringify({ content: text })}\n\n`);
       }
     }
 

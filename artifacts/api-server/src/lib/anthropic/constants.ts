@@ -1,2 +1,2 @@
-export const ANTHROPIC_MODEL = 'claude-opus-4-5';
-export const ANTHROPIC_MAX_TOKENS = 2048;
+export const GEMINI_MODEL = 'gemini-2.5-flash';
+export const GEMINI_MAX_TOKENS = 8192;
