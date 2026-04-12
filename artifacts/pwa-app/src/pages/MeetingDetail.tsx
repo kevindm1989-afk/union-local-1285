@@ -2,7 +2,10 @@ import { useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { MobileLayout } from "@/components/layout/MobileLayout";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Calendar, MapPin, Trash2, Edit3, Check, X, Plus, CheckCircle2, Circle } from "lucide-react";
+import {
+  ArrowLeft, Calendar, MapPin, Trash2, Edit3, Check, X, Plus,
+  CheckCircle2, Circle, Users, Printer, UserCheck, UserX, HelpCircle,
+} from "lucide-react";
 import { Link } from "wouter";
 import { usePermissions } from "@/App";
 import { useToast } from "@/hooks/use-toast";
@@ -11,6 +14,7 @@ import { cn } from "@/lib/utils";
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 type MeetingType = "executive" | "general" | "stewards";
+type AttendanceStatus = "present" | "absent" | "excused";
 
 interface AgendaItem {
   id: string;
@@ -29,6 +33,7 @@ interface Meeting {
   minutes: string | null;
   minutesPublished: string;
   attendees: number[];
+  attendanceData: Record<string, AttendanceStatus>;
 }
 
 const TYPE_COLORS: Record<MeetingType, string> = {
@@ -41,6 +46,12 @@ const TYPE_LABELS: Record<MeetingType, string> = {
   executive: "Executive Board",
   general: "General Membership",
   stewards: "Stewards Council",
+};
+
+const ATTENDANCE_CONFIG: Record<AttendanceStatus, { label: string; icon: typeof UserCheck; color: string; bg: string }> = {
+  present: { label: "Present", icon: UserCheck, color: "text-green-600", bg: "bg-green-100 border-green-300" },
+  absent:  { label: "Absent",  icon: UserX,    color: "text-red-500",   bg: "bg-red-50 border-red-200" },
+  excused: { label: "Excused", icon: HelpCircle, color: "text-amber-600", bg: "bg-amber-50 border-amber-200" },
 };
 
 function useMeeting(id: string) {
@@ -63,13 +74,15 @@ export default function MeetingDetail() {
   const { can } = usePermissions();
 
   const { data: meeting, isLoading } = useMeeting(id!);
-  const [tab, setTab] = useState<"agenda" | "minutes">("agenda");
+  const [tab, setTab] = useState<"agenda" | "minutes" | "attendance">("agenda");
   const [editingMinutes, setEditingMinutes] = useState(false);
   const [minutesDraft, setMinutesDraft] = useState("");
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [newItemText, setNewItemText] = useState("");
   const [savingAgenda, setSavingAgenda] = useState(false);
+  const [newAttendeeName, setNewAttendeeName] = useState("");
+  const [savingAttendance, setSavingAttendance] = useState(false);
 
   const canManage = can("meetings.manage");
 
@@ -115,7 +128,26 @@ export default function MeetingDetail() {
     }
   };
 
+  const patchAttendance = async (data: Record<string, AttendanceStatus>) => {
+    setSavingAttendance(true);
+    try {
+      const r = await fetch(`${BASE}/api/meetings/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ attendanceData: data }),
+      });
+      if (!r.ok) throw new Error();
+      qc.invalidateQueries({ queryKey: ["meeting", id] });
+    } catch {
+      toast({ title: "Save failed", variant: "destructive" });
+    } finally {
+      setSavingAttendance(false);
+    }
+  };
+
   const agendaItems: AgendaItem[] = meeting?.agendaItems ?? [];
+  const attendanceData: Record<string, AttendanceStatus> = meeting?.attendanceData ?? {};
 
   const addAgendaItem = () => {
     if (!newItemText.trim()) return;
@@ -134,6 +166,23 @@ export default function MeetingDetail() {
     patchAgendaItems(updated);
   };
 
+  const addAttendee = () => {
+    const name = newAttendeeName.trim();
+    if (!name || attendanceData[name]) return;
+    setNewAttendeeName("");
+    patchAttendance({ ...attendanceData, [name]: "present" });
+  };
+
+  const setAttendanceStatus = (name: string, status: AttendanceStatus) => {
+    patchAttendance({ ...attendanceData, [name]: status });
+  };
+
+  const removeAttendee = (name: string) => {
+    const next = { ...attendanceData };
+    delete next[name];
+    patchAttendance(next);
+  };
+
   const handleDelete = async () => {
     if (!confirm("Delete this meeting?")) return;
     setDeleting(true);
@@ -145,6 +194,54 @@ export default function MeetingDetail() {
       toast({ title: "Delete failed", variant: "destructive" });
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handlePrint = () => {
+    if (!meeting) return;
+    const date = new Date(meeting.date);
+    const dateStr = date.toLocaleDateString([], { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+    const timeStr = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+    const agendaHtml = agendaItems.length
+      ? `<ol>${agendaItems.map(i => `<li style="${i.done ? "text-decoration:line-through;color:#888" : ""}">${i.text}</li>`).join("")}</ol>`
+      : meeting.agenda ? `<pre style="white-space:pre-wrap;font-family:inherit">${meeting.agenda}</pre>` : "<p><em>No agenda items</em></p>";
+
+    const attendanceHtml = Object.keys(attendanceData).length
+      ? `<table style="width:100%;border-collapse:collapse">
+          <thead><tr><th style="text-align:left;border-bottom:1px solid #ccc;padding:4px 8px">Name</th><th style="text-align:left;border-bottom:1px solid #ccc;padding:4px 8px">Status</th></tr></thead>
+          <tbody>${Object.entries(attendanceData).map(([name, status]) =>
+            `<tr><td style="padding:4px 8px">${name}</td><td style="padding:4px 8px;text-transform:capitalize">${status}</td></tr>`
+          ).join("")}</tbody>
+        </table>`
+      : "<p><em>No attendance recorded</em></p>";
+
+    const minutesHtml = meeting.minutes
+      ? `<pre style="white-space:pre-wrap;font-family:inherit;font-size:14px">${meeting.minutes}</pre>`
+      : "<p><em>No minutes recorded</em></p>";
+
+    const html = `<!DOCTYPE html><html><head><title>${meeting.title}</title>
+      <style>
+        body { font-family: -apple-system, sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; color: #111; }
+        h1 { font-size: 22px; margin-bottom: 4px; }
+        .meta { color: #666; font-size: 14px; margin-bottom: 24px; }
+        h2 { font-size: 16px; border-bottom: 2px solid #eee; padding-bottom: 6px; margin-top: 28px; }
+        ol { padding-left: 20px; } li { margin: 6px 0; font-size: 14px; }
+        table { font-size: 14px; }
+        @media print { body { margin: 20px; } }
+      </style></head><body>
+      <h1>${meeting.title}</h1>
+      <div class="meta">${TYPE_LABELS[meeting.type] ?? meeting.type} &nbsp;·&nbsp; ${dateStr} at ${timeStr}${meeting.location ? ` &nbsp;·&nbsp; ${meeting.location}` : ""}</div>
+      <h2>Agenda</h2>${agendaHtml}
+      <h2>Attendance (${Object.values(attendanceData).filter(s => s === "present").length} present)</h2>${attendanceHtml}
+      <h2>Minutes</h2>${minutesHtml}
+    </body></html>`;
+
+    const win = window.open("", "_blank");
+    if (win) {
+      win.document.write(html);
+      win.document.close();
+      win.print();
     }
   };
 
@@ -171,6 +268,8 @@ export default function MeetingDetail() {
 
   const date = new Date(meeting.date);
   const isPast = date < new Date();
+  const presentCount = Object.values(attendanceData).filter(s => s === "present").length;
+  const totalCount = Object.keys(attendanceData).length;
 
   return (
     <MobileLayout>
@@ -193,15 +292,26 @@ export default function MeetingDetail() {
               {meeting.title}
             </h1>
           </div>
-          {canManage && (
-            <button
-              onClick={handleDelete}
-              disabled={deleting}
-              className="w-9 h-9 rounded-xl bg-destructive/10 flex items-center justify-center text-destructive shrink-0"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          )}
+          <div className="flex items-center gap-1 shrink-0">
+            {canManage && (
+              <button
+                onClick={handlePrint}
+                className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center text-muted-foreground"
+                title="Print / Export PDF"
+              >
+                <Printer className="w-4 h-4" />
+              </button>
+            )}
+            {canManage && (
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="w-9 h-9 rounded-xl bg-destructive/10 flex items-center justify-center text-destructive shrink-0"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Meta */}
@@ -222,6 +332,10 @@ export default function MeetingDetail() {
               <span>{meeting.location}</span>
             </div>
           )}
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Users className="w-4 h-4 shrink-0 text-primary" />
+            <span>{totalCount > 0 ? `${presentCount} of ${totalCount} present` : "No attendance recorded"}</span>
+          </div>
           {isPast && (
             <span className="inline-block text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-muted-foreground/20 text-muted-foreground">
               Past Meeting
@@ -231,7 +345,7 @@ export default function MeetingDetail() {
 
         {/* Tabs */}
         <div className="flex gap-1 mb-4 bg-muted rounded-xl p-1">
-          {(["agenda", "minutes"] as const).map((t) => (
+          {(["agenda", "attendance", "minutes"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -246,14 +360,16 @@ export default function MeetingDetail() {
               {t === "minutes" && meeting.minutesPublished === "published" && (
                 <span className="ml-1 text-[8px] text-green-600">✓</span>
               )}
+              {t === "attendance" && totalCount > 0 && (
+                <span className="ml-1 text-[8px] text-muted-foreground opacity-70">{totalCount}</span>
+              )}
             </button>
           ))}
         </div>
 
-        {/* Agenda */}
+        {/* ── Agenda Tab ── */}
         {tab === "agenda" && (
           <div className="space-y-3">
-            {/* Structured agenda items */}
             {agendaItems.length > 0 ? (
               <div className="space-y-2">
                 {agendaItems.map((item, idx) => (
@@ -288,7 +404,6 @@ export default function MeetingDetail() {
               </div>
             )}
 
-            {/* Fallback: legacy plain-text agenda */}
             {!agendaItems.length && meeting.agenda && (
               <div className="bg-muted rounded-2xl p-4">
                 <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Agenda Notes</p>
@@ -296,7 +411,6 @@ export default function MeetingDetail() {
               </div>
             )}
 
-            {/* Add item input (stewards/managers only) */}
             {canManage && (
               <div className="flex gap-2">
                 <input
@@ -325,7 +439,102 @@ export default function MeetingDetail() {
           </div>
         )}
 
-        {/* Minutes */}
+        {/* ── Attendance Tab ── */}
+        {tab === "attendance" && (
+          <div className="space-y-3">
+            {/* Summary chips */}
+            {totalCount > 0 && (
+              <div className="flex gap-2 flex-wrap">
+                {(["present", "absent", "excused"] as const).map((status) => {
+                  const count = Object.values(attendanceData).filter(s => s === status).length;
+                  if (!count) return null;
+                  const cfg = ATTENDANCE_CONFIG[status];
+                  return (
+                    <span key={status} className={cn("text-[11px] font-bold px-2.5 py-1 rounded-full border", cfg.bg, cfg.color)}>
+                      {count} {cfg.label}
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Attendee list */}
+            {totalCount === 0 ? (
+              <div className="bg-card border border-dashed border-border rounded-2xl p-8 text-center">
+                <Users className="w-8 h-8 mx-auto mb-2 text-muted-foreground opacity-20" />
+                <p className="text-sm text-muted-foreground">No attendees recorded yet</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {Object.entries(attendanceData).map(([name, status]) => {
+                  const cfg = ATTENDANCE_CONFIG[status];
+                  return (
+                    <div key={name} className="bg-card border border-border rounded-xl px-4 py-3 flex items-center gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-foreground truncate">{name}</p>
+                      </div>
+                      {canManage ? (
+                        <div className="flex items-center gap-1 shrink-0">
+                          {(["present", "absent", "excused"] as const).map((s) => {
+                            const c = ATTENDANCE_CONFIG[s];
+                            return (
+                              <button
+                                key={s}
+                                onClick={() => setAttendanceStatus(name, s)}
+                                disabled={savingAttendance}
+                                className={cn(
+                                  "text-[9px] font-bold uppercase px-2 py-1 rounded-lg border transition-colors",
+                                  status === s
+                                    ? cn(c.bg, c.color)
+                                    : "bg-muted text-muted-foreground border-transparent"
+                                )}
+                              >
+                                {s}
+                              </button>
+                            );
+                          })}
+                          <button
+                            onClick={() => removeAttendee(name)}
+                            className="ml-1 text-muted-foreground hover:text-destructive transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <span className={cn("text-[10px] font-bold uppercase px-2 py-1 rounded-lg border", ATTENDANCE_CONFIG[status].bg, ATTENDANCE_CONFIG[status].color)}>
+                          {cfg.label}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Add attendee input */}
+            {canManage && (
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newAttendeeName}
+                  onChange={(e) => setNewAttendeeName(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addAttendee(); } }}
+                  placeholder="Add member name..."
+                  className="flex-1 h-11 px-4 rounded-xl bg-card border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+                <button
+                  onClick={addAttendee}
+                  disabled={!newAttendeeName.trim() || savingAttendance}
+                  className="h-11 w-11 rounded-xl bg-primary text-primary-foreground flex items-center justify-center shrink-0 disabled:opacity-50 transition-opacity"
+                >
+                  <Plus className="w-5 h-5" />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Minutes Tab ── */}
         {tab === "minutes" && (
           <div className="space-y-3">
             {meeting.minutesPublished === "published" && !editingMinutes && (
@@ -378,15 +587,26 @@ export default function MeetingDetail() {
                     <p className="text-sm text-muted-foreground italic text-center py-8">No minutes recorded yet</p>
                   )}
                 </div>
-                {canManage && (
-                  <button
-                    onClick={() => { setMinutesDraft(meeting.minutes ?? ""); setEditingMinutes(true); }}
-                    className="w-full py-3 rounded-xl border border-primary text-primary text-sm font-bold flex items-center justify-center gap-2"
-                  >
-                    <Edit3 className="w-4 h-4" />
-                    {meeting.minutes ? "Edit Minutes" : "Record Minutes"}
-                  </button>
-                )}
+                <div className="flex gap-2">
+                  {canManage && (
+                    <button
+                      onClick={() => { setMinutesDraft(meeting.minutes ?? ""); setEditingMinutes(true); }}
+                      className="flex-1 py-3 rounded-xl border border-primary text-primary text-sm font-bold flex items-center justify-center gap-2"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                      {meeting.minutes ? "Edit Minutes" : "Record Minutes"}
+                    </button>
+                  )}
+                  {(meeting.minutes || agendaItems.length > 0) && (
+                    <button
+                      onClick={handlePrint}
+                      className="py-3 px-4 rounded-xl border border-border text-muted-foreground text-sm font-bold flex items-center justify-center gap-2"
+                    >
+                      <Printer className="w-4 h-4" />
+                      Export PDF
+                    </button>
+                  )}
+                </div>
               </>
             )}
           </div>

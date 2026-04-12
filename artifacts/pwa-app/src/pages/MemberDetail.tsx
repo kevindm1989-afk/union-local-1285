@@ -30,7 +30,7 @@ import {
   Paperclip, Download, Upload, X, AlertOctagon, ClipboardCheck, Plus,
   UserX, UserCheck, ShieldAlert, KeyRound, ShieldCheck, Eye, EyeOff, Copy,
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, isValid } from "date-fns";
 import { cn } from "@/lib/utils";
 
 // ─── types ────────────────────────────────────────────────────────────────────
@@ -129,6 +129,16 @@ function formatBytes(bytes: number | null): string {
 
 function downloadUrl(objectPath: string): string {
   return `/api/storage/objects/${objectPath.replace(/^\/objects\//, "")}`;
+}
+
+function safeFormat(dateStr: string | null | undefined, fmt: string, fallback = "—"): string {
+  if (!dateStr) return fallback;
+  try {
+    const d = new Date(dateStr);
+    return isValid(d) ? format(d, fmt) : fallback;
+  } catch {
+    return fallback;
+  }
 }
 
 const CATEGORY_LABELS: Record<MemberFileCategory, string> = {
@@ -572,20 +582,11 @@ export default function MemberDetail() {
               )
             )}
             {member.joinDate &&
-              field(
-                "Join Date",
-                format(new Date(member.joinDate), "MMM d, yyyy")
-              )}
+              field("Join Date", safeFormat(member.joinDate, "MMM d, yyyy"))}
             {(member as any).seniorityDate &&
-              field(
-                "Seniority Date",
-                format(new Date((member as any).seniorityDate), "MMM d, yyyy")
-              )}
+              field("Seniority Date", safeFormat((member as any).seniorityDate, "MMM d, yyyy"))}
             {(member as any).classificationDate &&
-              field(
-                "Classification Date",
-                format(new Date((member as any).classificationDate), "MMM d, yyyy")
-              )}
+              field("Classification Date", safeFormat((member as any).classificationDate, "MMM d, yyyy"))}
             {(member as any).shift && field("Shift", (member as any).shift)}
             {field(
               "Dues Status",
@@ -600,10 +601,7 @@ export default function MemberDetail() {
               </span>
             )}
             {(member as any).duesLastPaid &&
-              field(
-                "Dues Last Paid",
-                format(new Date((member as any).duesLastPaid), "MMM d, yyyy")
-              )}
+              field("Dues Last Paid", safeFormat((member as any).duesLastPaid, "MMM d, yyyy"))}
             {(member as any).seniorityRank != null && field("Seniority Rank", `#${(member as any).seniorityRank}`)}
             {field(
               "Card Signed",
@@ -768,7 +766,7 @@ export default function MemberDetail() {
                       <span className="text-[11px] text-muted-foreground">
                         {formatBytes(file.fileSize)}
                         {file.fileSize ? " · " : ""}
-                        {format(new Date(file.uploadedAt), "MMM d, yyyy")}
+                        {safeFormat(file.uploadedAt, "MMM d, yyyy")}
                       </span>
                     </div>
                     {file.description && (
@@ -985,7 +983,7 @@ export default function MemberDetail() {
                       </div>
                       {linkedUser.lastLoginAt && (
                         <p className="text-xs text-muted-foreground">
-                          Last login {format(new Date(linkedUser.lastLoginAt), "MMM d")}
+                          Last login {safeFormat(linkedUser.lastLoginAt, "MMM d")}
                         </p>
                       )}
                     </div>

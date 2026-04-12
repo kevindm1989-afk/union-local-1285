@@ -214,6 +214,9 @@ router.patch("/:id", requirePermission("members.edit"), asyncHandler(async (req,
   if (d.duesStatus !== undefined)         updates.duesStatus = d.duesStatus;
   if (d.duesLastPaid !== undefined)       updates.duesLastPaid = d.duesLastPaid;
   if (d.seniorityDate !== undefined)      updates.seniorityDate = d.seniorityDate;
+  if (d.seniorityRank !== undefined)      updates.seniorityRank = d.seniorityRank;
+  if (d.accommodationActive !== undefined) updates.accommodationActive = d.accommodationActive;
+  if (d.stewardNotes !== undefined)       updates.stewardNotes = d.stewardNotes;
 
   const [existing] = await db.select().from(membersTable).where(eq(membersTable.id, paramParsed.data.id));
 
