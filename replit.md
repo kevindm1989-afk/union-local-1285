@@ -31,7 +31,8 @@ Mobile PWA for Unifor Local 1285 stewards to manage member records, track grieva
 - **grievances** — `grievance_type`, `incident_date`, `remedy_requested`, `outcome` added
 - **announcements** — `urgency_level`, `scheduled_for`, `is_published`, `expires_at` added; 10 categories
 - **meetings** — `agenda_items` (jsonb), `attendance_data` (jsonb) added
-- **documents** — `steward_only` (boolean) added
+- **documents** — `steward_only` (boolean), `version_number` (int default 1), `change_note` (text), `document_group_id` (int) added; `document_group_id` initialized to `id` for all existing rows; index `idx_docs_group_id` added
+- **grievances** — `cba_document_id` (int) added; auto-populated with current CBA document ID on grievance creation
 - **bulletin_acknowledgements** — tracks per-member bulletin reads
 - **bulletin_responses** — tracks mobilization responses (`im_in`/`need_info`)
 - **grievance_notes**, **audit_logs**, **local_settings**, **access_requests**, **member_files**, **discipline_records**, **push_subscriptions**

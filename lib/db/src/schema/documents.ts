@@ -18,4 +18,8 @@ export const documentsTable = pgTable("documents", {
   uploadedAt: timestamp("uploaded_at", { withTimezone: true }).notNull().defaultNow(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  // Version control fields
+  versionNumber: integer("version_number").notNull().default(1),
+  changeNote: text("change_note"),
+  documentGroupId: integer("document_group_id"),
 });

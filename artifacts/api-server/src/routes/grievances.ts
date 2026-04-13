@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db, grievancesTable, membersTable, localSettingsTable, grievanceNotesTable, usersTable } from "@workspace/db";
+import { db, grievancesTable, membersTable, localSettingsTable, grievanceNotesTable, usersTable, documentsTable, pool } from "@workspace/db";
 import { eq, and, desc, sql } from "drizzle-orm";
 import { requirePermission, requireSteward } from "../lib/permissions";
 import { logAudit } from "../lib/auditLog";
@@ -349,6 +349,23 @@ router.post("/", requirePermission("grievances.file"), asyncHandler(async (req, 
       outcome: rawBody.outcome as string ?? "pending",
     })
     .returning();
+
+  // Auto-populate cba_document_id with the current CBA document (version protection)
+  try {
+    const cbaRes = await db
+      .select({ id: documentsTable.id })
+      .from(documentsTable)
+      .where(and(eq(documentsTable.isCurrent, true), eq(documentsTable.category, "cba")))
+      .orderBy(desc(documentsTable.uploadedAt))
+      .limit(1);
+    if (cbaRes.length > 0) {
+      await pool.connect().then(async (client) => {
+        try {
+          await client.query(`UPDATE grievances SET cba_document_id = $1 WHERE id = $2`, [cbaRes[0].id, grievance.id]);
+        } finally { client.release(); }
+      });
+    }
+  } catch { /* non-fatal */ }
 
   await logAudit(req, "create", "grievance", grievance.id, null, formatGrievance(grievance));
 

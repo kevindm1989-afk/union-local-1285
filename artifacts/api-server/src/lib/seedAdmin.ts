@@ -634,6 +634,32 @@ export async function seedAdminUser(): Promise<void> {
   }
 }
 
+export async function ensureDocumentVersioningColumns(): Promise<void> {
+  const client = await pool.connect();
+  try {
+    // Add version control columns to documents table
+    await client.query(`
+      ALTER TABLE documents
+        ADD COLUMN IF NOT EXISTS version_number INTEGER NOT NULL DEFAULT 1,
+        ADD COLUMN IF NOT EXISTS change_note TEXT,
+        ADD COLUMN IF NOT EXISTS document_group_id INTEGER
+    `);
+    // Initialize document_group_id = id for all existing documents that don't have one yet
+    await client.query(`
+      UPDATE documents SET document_group_id = id WHERE document_group_id IS NULL
+    `);
+    // Add cba_document_id to grievances for version-at-time-of-filing tracking
+    await client.query(`
+      ALTER TABLE grievances ADD COLUMN IF NOT EXISTS cba_document_id INTEGER
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_docs_group_id ON documents(document_group_id)
+    `);
+  } finally {
+    client.release();
+  }
+}
+
 export async function ensureSeniorityDisputeTables(): Promise<void> {
   const client = await pool.connect();
   try {
