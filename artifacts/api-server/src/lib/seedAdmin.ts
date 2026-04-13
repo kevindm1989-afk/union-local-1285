@@ -493,6 +493,23 @@ export async function ensureAdvancedFeatureTables(): Promise<void> {
       );
     `);
 
+    // Arbitration Referral Packages
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS arbitration_packages (
+        id SERIAL PRIMARY KEY,
+        grievance_id INTEGER NOT NULL,
+        cover_summary TEXT NOT NULL,
+        assembled_data JSONB NOT NULL DEFAULT '{}',
+        generated_by INTEGER,
+        generated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+    await client.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS arbitration_packages_grievance_id_key
+      ON arbitration_packages (grievance_id);
+    `);
+
     // Seed starter grievance templates if none exist
     const { rowCount } = await client.query(`SELECT 1 FROM grievance_templates LIMIT 1`);
     if (!rowCount) {

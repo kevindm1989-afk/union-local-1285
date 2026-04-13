@@ -17,7 +17,7 @@ import {
 } from "@workspace/api-zod";
 import { asyncHandler } from "../lib/asyncHandler";
 import { ai } from "../lib/gemini/client";
-import { GEMINI_MODEL, GEMINI_MAX_TOKENS } from "../lib/anthropic/constants";
+import { GEMINI_MODEL, GEMINI_FLASH_LITE_MODEL, GEMINI_MAX_TOKENS } from "../lib/anthropic/constants";
 import { logger } from "../lib/logger";
 // @ts-ignore — .txt imported via esbuild text loader
 import cbaText from "../data/cba.txt";
@@ -540,6 +540,193 @@ router.patch("/:id", requirePermission("grievances.file"), asyncHandler(async (r
   }
 
   res.json(formatGrievance(grievance, memberName));
+}));
+
+// ─── Arbitration Referral Package ─────────────────────────────────────────────
+
+const ARBITRATION_SYSTEM_PROMPT = `You are an arbitration referral assistant for Unifor Local 1285. When given a complete grievance file, generate a professional arbitration referral cover summary for Unifor National that includes: 1) A plain language summary of the grievance and why it is being referred to arbitration, 2) The union's position statement, 3) Key facts and timeline of events, 4) Collective agreement articles violated, 5) Remedy being sought, 6) Any procedural issues or deadline concerns the National rep should be aware of. Write in a professional, formal tone suitable for submission to Unifor National. Always end with: 'This referral package has been prepared by the Local steward and is submitted for review and action by the Unifor National Representative.'`;
+
+router.get("/:id/referral-package", requireSteward, asyncHandler(async (req, res) => {
+  const id = Number(req.params.id);
+  if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
+  const result = await db.execute(sql`SELECT * FROM arbitration_packages WHERE grievance_id = ${id} LIMIT 1`);
+  const rows = Array.isArray(result) ? result : (result as any).rows ?? [];
+  const row = rows[0];
+  if (!row) { res.status(404).json({ error: "No referral package generated yet" }); return; }
+  res.json({
+    id: row.id,
+    grievanceId: row.grievance_id,
+    coverSummary: row.cover_summary,
+    assembledData: row.assembled_data,
+    generatedAt: row.generated_at,
+    updatedAt: row.updated_at,
+  });
+}));
+
+router.post("/:id/referral-package", requireSteward, asyncHandler(async (req, res) => {
+  const id = Number(req.params.id);
+  if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
+
+  const [grievance] = await db.select().from(grievancesTable).where(eq(grievancesTable.id, id));
+  if (!grievance) { res.status(404).json({ error: "Grievance not found" }); return; }
+
+  let member: { name: string | null; department: string | null; shift: string | null; employeeId: string | null } | null = null;
+  if (grievance.memberId) {
+    const [m] = await db.select({
+      name: membersTable.name,
+      department: membersTable.department,
+      shift: membersTable.shift,
+      employeeId: membersTable.employeeId,
+    }).from(membersTable).where(eq(membersTable.id, grievance.memberId));
+    member = m ?? null;
+  }
+
+  const notes = await db.select().from(grievanceNotesTable)
+    .where(eq(grievanceNotesTable.grievanceId, id))
+    .orderBy(grievanceNotesTable.createdAt);
+
+  const journalResult = await db.execute(sql`
+    SELECT content, entry_type, author_name, created_at FROM case_journal_entries
+    WHERE grievance_id = ${id} ORDER BY created_at ASC
+  `);
+  const journalRows = Array.isArray(journalResult) ? journalResult : (journalResult as any).rows ?? [];
+
+  const jcResult = await db.execute(sql`
+    SELECT * FROM just_cause_assessments WHERE grievance_id = ${id} LIMIT 1
+  `);
+  const jcRows = Array.isArray(jcResult) ? jcResult : (jcResult as any).rows ?? [];
+  const jc = (jcRows as any[])[0] ?? null;
+
+  const commResult = await db.execute(sql`
+    SELECT contact_method, summary, contact_date, logged_by_name FROM member_communication_log
+    WHERE grievance_id = ${id} ORDER BY contact_date ASC
+  `);
+  const commRows = Array.isArray(commResult) ? commResult : (commResult as any).rows ?? [];
+
+  const assembledData = {
+    grievance: {
+      number: grievance.grievanceNumber,
+      title: grievance.title,
+      description: grievance.description,
+      contractArticle: grievance.contractArticle,
+      grievanceType: grievance.grievanceType,
+      incidentDate: grievance.incidentDate,
+      filedDate: grievance.filedDate,
+      dueDate: grievance.dueDate,
+      step: grievance.step,
+      status: grievance.status,
+      outcome: grievance.outcome,
+      remedyRequested: grievance.remedyRequested,
+      notes: grievance.notes,
+      accommodationRequest: grievance.accommodationRequest,
+    },
+    member: member ?? null,
+    activityNotes: notes.map(n => ({ content: n.content, type: n.noteType, author: n.authorName, date: n.createdAt })),
+    journalEntries: (journalRows as any[]).map(j => ({ content: j.content, type: j.entry_type, author: j.author_name, date: j.created_at })),
+    justCause: jc ? {
+      adequateNotice: jc.adequate_notice, reasonableRule: jc.reasonable_rule,
+      investigationConducted: jc.investigation_conducted, investigationFair: jc.investigation_fair,
+      proofSufficient: jc.proof_sufficient, penaltyConsistent: jc.penalty_consistent,
+      penaltyProgressive: jc.penalty_progressive, notes: jc.notes,
+    } : null,
+    communicationLog: (commRows as any[]).map(c => ({ method: c.contact_method, summary: c.summary, date: c.contact_date, author: c.logged_by_name })),
+  };
+
+  const stepNotes = notes.map(n => `[${n.noteType.toUpperCase()}] ${n.authorName ?? "System"}: ${n.content}`).join("\n") || "No activity recorded";
+  const journalText = (journalRows as any[]).map((j: any) => `[${j.entry_type}] ${j.author_name ?? "Steward"}: ${j.content}`).join("\n") || "No journal entries";
+  const commText = (commRows as any[]).map((c: any) => `${c.contact_date} via ${c.contact_method}: ${c.summary}`).join("\n") || "None";
+  const jcText = jc
+    ? `Adequate Notice: ${jc.adequate_notice ? "Yes" : "No"}\nReasonable Rule: ${jc.reasonable_rule ? "Yes" : "No"}\nInvestigation Conducted: ${jc.investigation_conducted ? "Yes" : "No"}\nInvestigation Fair: ${jc.investigation_fair ? "Yes" : "No"}\nProof Sufficient: ${jc.proof_sufficient ? "Yes" : "No"}\nPenalty Consistent: ${jc.penalty_consistent ? "Yes" : "No"}\nProgressive Discipline: ${jc.penalty_progressive ? "Yes" : "No"}\nAssessment Notes: ${jc.notes ?? "None"}`
+    : "Not assessed";
+  const memberText = member
+    ? `Name: ${member.name ?? "Unknown"}\nDepartment: ${member.department ?? "Not specified"}\nShift: ${member.shift ?? "Not specified"}\nEmployee ID: ${member.employeeId ?? "Not specified"}`
+    : "No member linked";
+
+  const userPrompt = `Generate a professional arbitration referral cover summary for the following Unifor Local 1285 grievance.
+
+GRIEVANCE FILE:
+===============
+Grievance Number: ${grievance.grievanceNumber}
+Title: ${grievance.title}
+Type: ${grievance.grievanceType ?? "Not specified"}
+Filed Date: ${grievance.filedDate}
+Incident Date: ${grievance.incidentDate ?? "Not specified"}
+Current Step: Step ${grievance.step}
+Status: ${grievance.status}
+
+MEMBER:
+${memberText}
+
+GRIEVANCE DESCRIPTION:
+${grievance.description ?? "No description provided"}
+
+CONTRACT ARTICLES CITED:
+${grievance.contractArticle ?? "Not specified"}
+
+REMEDY REQUESTED:
+${grievance.remedyRequested ?? "Not specified"}
+
+STEWARD NOTES:
+${grievance.notes ?? "None"}
+
+ACTIVITY TIMELINE (${notes.length} entries):
+${stepNotes}
+
+STEWARD JOURNAL (${(journalRows as any[]).length} entries):
+${journalText}
+
+JUST CAUSE ASSESSMENT:
+${jcText}
+
+MEMBER CONTACTS LOGGED (${(commRows as any[]).length}):
+${commText}
+
+Generate the complete arbitration referral cover summary now.`;
+
+  logger.info({ grievanceId: id, model: GEMINI_FLASH_LITE_MODEL }, "Generating arbitration referral package");
+
+  const result = await ai.models.generateContent({
+    model: GEMINI_FLASH_LITE_MODEL,
+    contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+    config: { systemInstruction: ARBITRATION_SYSTEM_PROMPT, maxOutputTokens: GEMINI_MAX_TOKENS },
+  });
+
+  const coverSummary = result.text ?? "";
+  if (!coverSummary.trim()) {
+    res.status(502).json({ error: "AI returned empty response. Please try again." });
+    return;
+  }
+
+  const userId = req.session?.userId ?? null;
+  await db.execute(sql`
+    INSERT INTO arbitration_packages (grievance_id, cover_summary, assembled_data, generated_by, generated_at, updated_at)
+    VALUES (${id}, ${coverSummary}, ${JSON.stringify(assembledData)}::jsonb, ${userId}, NOW(), NOW())
+    ON CONFLICT (grievance_id)
+    DO UPDATE SET cover_summary = EXCLUDED.cover_summary,
+                  assembled_data = EXCLUDED.assembled_data,
+                  generated_at = NOW(),
+                  updated_at = NOW()
+  `);
+
+  res.json({ grievanceId: id, coverSummary, assembledData, generatedAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+}));
+
+router.patch("/:id/referral-package", requireSteward, asyncHandler(async (req, res) => {
+  const id = Number(req.params.id);
+  if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
+  const { coverSummary } = req.body;
+  if (!coverSummary || typeof coverSummary !== "string") {
+    res.status(400).json({ error: "coverSummary is required" });
+    return;
+  }
+  const chkResult = await db.execute(sql`SELECT id FROM arbitration_packages WHERE grievance_id = ${id} LIMIT 1`);
+  const chkRows = Array.isArray(chkResult) ? chkResult : (chkResult as any).rows ?? [];
+  if (!chkRows.length) { res.status(404).json({ error: "No package found — generate one first" }); return; }
+  await db.execute(sql`
+    UPDATE arbitration_packages SET cover_summary = ${coverSummary}, updated_at = NOW()
+    WHERE grievance_id = ${id}
+  `);
+  res.json({ ok: true, grievanceId: id, updatedAt: new Date().toISOString() });
 }));
 
 router.delete("/:id", requirePermission("grievances.manage"), asyncHandler(async (req, res) => {

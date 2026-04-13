@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
+import { ArbitrationReferralPanel } from "@/components/ArbitrationReferralPanel";
 
 const statusColors: Record<string, string> = {
   open: "bg-blue-100 text-blue-800 border-blue-200",
@@ -729,6 +730,14 @@ export default function GrievanceDetail() {
               )}
             </div>
           </Panel>
+
+          {/* ── Arbitration Referral Package ───────────────────────────────── */}
+          <ArbitrationReferralPanel
+            grievanceId={grievanceId}
+            grievanceNumber={grievance.grievanceNumber}
+            step={parseInt(step)}
+            outcome={outcome}
+          />
 
           <div className="pt-2 text-center text-xs text-muted-foreground space-y-0.5 pb-6">
             <p>Filed {format(new Date(grievance.filedDate), "MMMM d, yyyy")}</p>
