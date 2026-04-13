@@ -22,6 +22,7 @@ import BulletinDetail from "@/pages/BulletinDetail";
 import Documents from "@/pages/Documents";
 import Admin from "@/pages/Admin";
 import CbaAssistant from "@/pages/CbaAssistant";
+import ContractViolationDetector from "@/pages/ContractViolationDetector";
 import Meetings from "@/pages/Meetings";
 import MeetingCreate from "@/pages/MeetingCreate";
 import MeetingDetail from "@/pages/MeetingDetail";
@@ -94,6 +95,7 @@ function StewardRouter() {
       <Route path="/members/:id" component={MemberDetail} />
 
       <Route path="/grievances" component={Grievances} />
+      <Route path="/grievances/detect" component={ContractViolationDetector} />
       <Route path="/grievances/new" component={GrievanceCreate} />
       <Route path="/grievances/:id" component={GrievanceDetail} />
 

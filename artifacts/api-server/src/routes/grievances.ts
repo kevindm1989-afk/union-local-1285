@@ -157,6 +157,86 @@ Respond with a JSON object using exactly these keys:
   });
 }));
 
+const VIOLATION_DETECTOR_SYSTEM_PROMPT = `You are a contract violation analysis assistant for Unifor Local 1285 operating under Ontario labor law and the Unifor collective agreement. When given a description of a workplace situation, analyze it against the collective agreement and identify: 1) Which specific articles may have been violated, 2) The severity of the violation (Minor, Moderate, Serious, Critical), 3) A plain language explanation of why each article applies, 4) Recommended next steps (Informal Resolution, File Grievance, or Escalate Immediately), 5) Whether Ontario ESA or Unifor national policy is also implicated. Be precise and cite specific article numbers. Always clarify this is an analysis to assist the steward, not legal advice. Respond only with a JSON object — no markdown, no backticks.`;
+
+router.post("/detect", requirePermission("grievances.view"), asyncHandler(async (req, res) => {
+  const { whatHappened, date, affected, department } = req.body;
+
+  if (!whatHappened || typeof whatHappened !== "string" || whatHappened.trim().length < 10) {
+    res.status(400).json({ error: "Please describe what happened in at least 10 characters." });
+    return;
+  }
+
+  const userPrompt = `Analyze the following workplace situation against the collective agreement and Ontario labor law:
+
+SITUATION: ${whatHappened.trim()}
+DATE: ${date || "Not specified"}
+AFFECTED: ${affected || "Not specified"}
+DEPARTMENT / SHIFT: ${department || "Not specified"}
+
+COLLECTIVE AGREEMENT TEXT FOR REFERENCE:
+${cbaText}
+
+Respond with a JSON object using exactly these keys:
+{
+  "severity": "Minor" | "Moderate" | "Serious" | "Critical",
+  "summary": "1-2 sentence plain language overview of the potential violation",
+  "articles": [
+    {
+      "number": "Article X.Y",
+      "title": "Article title or subject",
+      "explanation": "Plain language explanation of why this article applies to the situation"
+    }
+  ],
+  "nextSteps": "Informal Resolution" | "File Grievance" | "Escalate Immediately",
+  "nextStepsRationale": "Plain language explanation of why this next step is recommended",
+  "esaImplicated": true | false,
+  "esaDetails": "Description of relevant Ontario ESA provisions, or null if not implicated",
+  "uniforPolicyImplicated": true | false,
+  "uniforPolicyDetails": "Description of relevant Unifor national policy, or null if not implicated"
+}`;
+
+  const result = await ai.models.generateContent({
+    model: GEMINI_MODEL,
+    contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+    config: {
+      systemInstruction: VIOLATION_DETECTOR_SYSTEM_PROMPT,
+      responseMimeType: "application/json",
+      maxOutputTokens: GEMINI_MAX_TOKENS,
+    },
+  });
+
+  const text = result.text ?? "";
+
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    res.status(502).json({ error: "AI returned an unparseable response. Please try again." });
+    return;
+  }
+
+  const articles = Array.isArray(parsed.articles)
+    ? parsed.articles.map((a: any) => ({
+        number: a.number ?? "",
+        title: a.title ?? "",
+        explanation: a.explanation ?? "",
+      }))
+    : [];
+
+  res.json({
+    severity: parsed.severity ?? "Minor",
+    summary: parsed.summary ?? "",
+    articles,
+    nextSteps: parsed.nextSteps ?? "Informal Resolution",
+    nextStepsRationale: parsed.nextStepsRationale ?? "",
+    esaImplicated: parsed.esaImplicated === true,
+    esaDetails: parsed.esaDetails ?? null,
+    uniforPolicyImplicated: parsed.uniforPolicyImplicated === true,
+    uniforPolicyDetails: parsed.uniforPolicyDetails ?? null,
+  });
+}));
+
 router.get("/", asyncHandler(async (req, res) => {
   const parsed = ListGrievancesQueryParams.safeParse(req.query);
   if (!parsed.success) {

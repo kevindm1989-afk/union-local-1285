@@ -2,7 +2,7 @@ import { useListGrievances, getListGrievancesQueryKey } from "@workspace/api-cli
 import { MobileLayout } from "@/components/layout/MobileLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "wouter";
-import { Clock, CheckCircle, Search, X } from "lucide-react";
+import { Clock, CheckCircle, Search, X, ShieldAlert } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { useState, useMemo } from "react";
@@ -55,9 +55,17 @@ export default function Grievances() {
   return (
     <MobileLayout>
       <div className="p-4 sm:p-6 space-y-4">
-        <header>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Grievances</h1>
-          <p className="text-muted-foreground mt-1">Active disputes & history</p>
+        <header className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Grievances</h1>
+            <p className="text-muted-foreground mt-1">Active disputes & history</p>
+          </div>
+          <Link href="/grievances/detect">
+            <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-primary/30 bg-primary/5 hover:bg-primary/10 active:bg-primary/15 transition-colors cursor-pointer flex-shrink-0 mt-1">
+              <ShieldAlert className="w-3.5 h-3.5 text-primary" />
+              <span className="text-xs font-bold text-primary">Detect Violation</span>
+            </div>
+          </Link>
         </header>
 
         {/* Search bar */}

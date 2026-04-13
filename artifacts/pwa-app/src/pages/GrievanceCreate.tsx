@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -119,6 +119,26 @@ export default function GrievanceCreate() {
     department: "",
     grievanceType: "",
   });
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("grievance_prefill");
+      if (!raw) return;
+      sessionStorage.removeItem("grievance_prefill");
+      const prefill = JSON.parse(raw);
+      if (prefill._fromDetector) {
+        setAiIntake((prev) => ({
+          ...prev,
+          whatHappened: prefill.whatHappened ?? prev.whatHappened,
+          incidentDate: prefill.incidentDate ?? prev.incidentDate,
+          membersInvolved: prefill.membersInvolved ?? prev.membersInvolved,
+          department: prefill.department ?? prev.department,
+          grievanceType: prefill.grievanceType ?? prev.grievanceType,
+        }));
+        setShowAiSheet(true);
+      }
+    } catch {}
+  }, []);
 
   const resetAiSheet = () => {
     setAiPhase("form");
