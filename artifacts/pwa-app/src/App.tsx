@@ -32,6 +32,7 @@ import Coverage from "@/pages/Coverage";
 import Polls from "@/pages/Polls";
 import Elections from "@/pages/Elections";
 import SeniorityDispute from "@/pages/SeniorityDispute";
+import ExecutiveDashboard from "@/pages/ExecutiveDashboard";
 
 import MemberPortalProfile from "@/pages/portal/MemberPortalProfile";
 import MemberPortalGrievances from "@/pages/portal/MemberPortalGrievances";
@@ -221,6 +222,7 @@ function App() {
                 <Route path="/polls" component={Polls} />
                 <Route path="/elections" component={Elections} />
                 <Route path="/seniority-disputes" component={SeniorityDispute} />
+                <Route path="/executive-dashboard" component={ExecutiveDashboard} />
                 <Route>{user?.role === "member" ? <MemberPortalRouter /> : <StewardRouter />}</Route>
               </Switch>
             </WouterRouter>

@@ -48,6 +48,7 @@ export function MobileLayout({ children }: { children: React.ReactNode }) {
     if (location.startsWith("/polls")) return "polls";
     if (location.startsWith("/elections")) return "elections";
     if (location.startsWith("/seniority-disputes")) return "seniority-disputes";
+    if (location.startsWith("/executive-dashboard")) return "executive-dashboard";
     return "dashboard";
   };
 
@@ -117,6 +118,14 @@ export function MobileLayout({ children }: { children: React.ReactNode }) {
 
                   {/* Quick links for advanced features */}
                   <div className="border-t border-border">
+                    <Link
+                      href="/executive-dashboard"
+                      onClick={() => setShowUserMenu(false)}
+                      className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted/50 transition-colors font-semibold"
+                    >
+                      <ShieldCheck className="w-4 h-4 text-primary" />
+                      Executive Dashboard
+                    </Link>
                     <Link
                       href="/stats"
                       onClick={() => setShowUserMenu(false)}

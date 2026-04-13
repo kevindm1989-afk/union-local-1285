@@ -128,6 +128,29 @@ All schema additions done via `ensureAdvancedFeatureTables()` raw SQL `ADD COLUM
 Mobilization categories (show I'm In / Need More Info): `job_action`, `strike_action`, `action`
 Critical/emergency categories (full-screen overlay): `safety_alert`, `strike_action`, `job_action`
 
+## Executive Dashboard
+
+High-level summary screen for the unit chairperson and executive committee at `/executive-dashboard`. Steward/admin only. Accessible via user menu → "Executive Dashboard" (first item, bold, ShieldCheck icon).
+
+### API Endpoint
+`GET /api/executive-dashboard` — single call, all queries run in parallel via `Promise.all`. Returns:
+- `grievances`: totalOpen, byStatus, byStep, deadlinesIn7Days, overdue, closedRatio (win/loss/withdrawn)
+- `complaints`: totalOpen, patterns (3+ same category in 30 days), byCategory, escalatedThisMonth
+- `members`: totalActive, duesInArrears, bulletinAcknowledgements (last 3, ack rate %), lastVoteParticipation
+- `mobilization`: lastBulletin, activeVotes (with live votesCast), activeElections, strikeOrJobActionBulletins
+- `seniorityDisputes`: thisMonth, activePatterns (3+ same type in 60 days), mostCommonType
+- `upcomingDeadlines`: next 5 grievances by due_date (with daysUntilDue), active poll closings
+- `generatedAt`: timestamp
+
+### Frontend (ExecutiveDashboard.tsx)
+Seven card sections with color-coded left borders: Grievances (blue), Complaints (orange), Member Engagement (emerald), Mobilization Readiness (violet), Seniority Disputes (amber), Upcoming Deadlines (rose), Quick Actions.
+- Critical alert banners at top for: overdue grievances, active strike/job action bulletins, complaint patterns, seniority patterns
+- Color coding: red=overdue/critical, amber=warning, green=healthy
+- Bulletin acknowledgement shown as progress bars with %
+- Upcoming deadline cards color-coded by urgency (red ≤3 days, amber ≤7 days)
+- Refresh button in header, "Updated at [time]" shown
+- Quick Actions: File Grievance, Post Bulletin, Launch Vote, Seniority Tool
+
 ## Seniority Dispute Tool
 
 Steward-only AI-powered tool at `/seniority-disputes`. Analyzes whether correct seniority order was followed for 7 dispute types.

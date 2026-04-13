@@ -24,6 +24,7 @@ import coverageRouter from "./coverage";
 import pollsRouter from "./polls";
 import electionsRouter from "./elections";
 import seniorityDisputesRouter from "./seniority-disputes";
+import executiveDashboardRouter from "./executive-dashboard";
 import onboardingRouter from "./onboarding";
 import cbaInfoRouter from "./cba-info";
 import accessRequestsRouter from "./access-requests";
@@ -131,7 +132,8 @@ router.use(
 router.use("/stats",      requireSteward, statsRouter);
 router.use("/coverage",   requireSteward, coverageRouter);
 router.use("/bargaining",           requireSteward, bargainingRouter);
-router.use("/seniority-disputes",   requireSteward, seniorityDisputesRouter);
+router.use("/seniority-disputes",     requireSteward, seniorityDisputesRouter);
+router.use("/executive-dashboard",   requireSteward, executiveDashboardRouter);
 router.use("/complaints", complaintsRouter);
 
 // ─── Member-accessible route groups ──────────────────────────────────────────
