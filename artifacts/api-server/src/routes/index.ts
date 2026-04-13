@@ -26,6 +26,7 @@ import onboardingRouter from "./onboarding";
 import cbaInfoRouter from "./cba-info";
 import accessRequestsRouter from "./access-requests";
 import bargainingRouter from "./bargaining";
+import complaintsRouter from "./complaints";
 import grievanceAlertsRouter, { runDailyAlertJob } from "./grievance-alerts";
 import { requirePermission, requireSteward } from "../lib/permissions";
 
@@ -119,7 +120,8 @@ router.use(
 
 router.use("/stats",      requireSteward, statsRouter);
 router.use("/coverage",   requireSteward, coverageRouter);
-router.use("/bargaining", requireSteward, bargainingRouter);
+router.use("/bargaining",  requireSteward, bargainingRouter);
+router.use("/complaints", complaintsRouter);
 
 // ─── Member-accessible route groups ──────────────────────────────────────────
 // Any authenticated session (including role = "member") may reach these.

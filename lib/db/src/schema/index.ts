@@ -20,3 +20,4 @@ export * from "./steward_coverage";
 export * from "./polls";
 export * from "./onboarding";
 export * from "./bargaining_reports";
+export * from "./member_complaints";
