@@ -18,6 +18,7 @@ import {
 import { asyncHandler } from "../lib/asyncHandler";
 import { ai } from "../lib/gemini/client";
 import { GEMINI_MODEL, GEMINI_MAX_TOKENS } from "../lib/anthropic/constants";
+import { logger } from "../lib/logger";
 // @ts-ignore — .txt imported via esbuild text loader
 import cbaText from "../data/cba.txt";
 
@@ -154,20 +155,30 @@ The recommended step number (1, 2, 3, 4, or 5)
 GRIEVANCE_DRAFT:
 The full formal grievance text. Plain text only. Label each section: STATEMENT OF GRIEVANCE, ARTICLES VIOLATED, JUST CAUSE PRINCIPLES BREACHED, REMEDY SOUGHT, PROCEDURAL STEP`;
 
-  const result = await ai.models.generateContent({
-    model: GEMINI_MODEL,
-    contents: [{ role: "user", parts: [{ text: userPrompt }] }],
-    config: {
-      systemInstruction: GRIEVANCE_DRAFT_SYSTEM_PROMPT,
-      maxOutputTokens: GEMINI_MAX_TOKENS,
-    },
-  });
+  logger.info({ model: GEMINI_MODEL, maxOutputTokens: GEMINI_MAX_TOKENS, bodyKeys: Object.keys(req.body) }, "grievance /draft: calling Gemini");
 
-  const rawText = result.text ?? "";
-
-  logger.info({ rawLength: rawText.length, preview: rawText.slice(0, 300) }, "grievance /draft raw Gemini response");
+  let rawText = "";
+  try {
+    const result = await ai.models.generateContent({
+      model: GEMINI_MODEL,
+      contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+      config: {
+        systemInstruction: GRIEVANCE_DRAFT_SYSTEM_PROMPT,
+        maxOutputTokens: GEMINI_MAX_TOKENS,
+      },
+    });
+    rawText = result.text ?? "";
+    logger.info({ rawLength: rawText.length, preview: rawText.slice(0, 300) }, "grievance /draft raw Gemini response");
+  } catch (geminiErr: unknown) {
+    const msg = geminiErr instanceof Error ? geminiErr.message : String(geminiErr);
+    const stack = geminiErr instanceof Error ? geminiErr.stack : undefined;
+    logger.error({ err: geminiErr, message: msg, stack, model: GEMINI_MODEL }, "grievance /draft: Gemini API call failed");
+    res.status(502).json({ error: `AI draft failed: ${msg}` });
+    return;
+  }
 
   if (!rawText.trim()) {
+    logger.warn({ model: GEMINI_MODEL }, "grievance /draft: Gemini returned empty response");
     res.status(502).json({ error: "AI draft unavailable — please try again or draft manually" });
     return;
   }

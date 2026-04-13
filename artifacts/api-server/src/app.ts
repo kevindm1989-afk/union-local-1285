@@ -138,9 +138,10 @@ if (process.env.NODE_ENV === "production") {
 // Must be the last middleware registered.
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-  logger.error({ err }, "Unhandled route error");
+  logger.error({ err, message: err?.message, stack: err?.stack }, "Unhandled route error");
   if (res.headersSent) return;
-  res.status(500).json({ error: "Internal server error", code: "INTERNAL_ERROR" });
+  const message = process.env.NODE_ENV !== "production" ? err?.message || "Internal server error" : "Internal server error";
+  res.status(500).json({ error: message, code: "INTERNAL_ERROR" });
 });
 
 export default app;
