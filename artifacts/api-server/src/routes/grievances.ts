@@ -97,7 +97,24 @@ function generateGrievanceNumber(): string {
 
 const GRIEVANCE_DRAFT_SYSTEM_PROMPT = `You are a formal grievance drafting assistant for Unifor Local 1285, a Canadian union operating under Ontario labor law. When given a description of a workplace incident, draft a formal grievance that includes: a clear statement of the grievance, the specific collective agreement articles violated, the just cause principles breached, the remedy sought, and the procedural step (Step 1, Step 2, or Arbitration). Always use formal union grievance language. Never file or send anything — output is a draft for steward review only.
 
-You have access to the collective agreement text. Reference specific article numbers wherever possible. Structure the grievance formally with labelled sections. Respond only with a JSON object — no markdown, no backticks.`;
+You have access to the collective agreement text. Reference specific article numbers wherever possible.
+
+CRITICAL FORMATTING RULES — YOU MUST FOLLOW THESE EXACTLY:
+- Return ONLY plain text. No JSON. No markdown. No backticks. No asterisks. No code blocks. No formatting symbols of any kind.
+- Begin your response immediately with the label GRIEVANCE_TITLE: — no preamble, no introduction.
+- Use exactly the labeled sections below in exactly this order.
+- Do not add any commentary, explanation, or extra text before or after the sections.`;
+
+function extractSection(text: string, label: string): string {
+  const idx = text.indexOf(label + ":");
+  if (idx === -1) return "";
+  const start = idx + label.length + 1;
+  const rest = text.slice(start);
+  // Find the next label or end of string
+  const nextLabel = rest.search(/\n[A-Z_]{3,}:/);
+  const content = nextLabel === -1 ? rest : rest.slice(0, nextLabel);
+  return content.trim();
+}
 
 router.post("/draft", requirePermission("grievances.view"), asyncHandler(async (req, res) => {
   const { whatHappened, incidentDate, membersInvolved, managementInvolved, department, grievanceType } = req.body;
@@ -107,8 +124,9 @@ router.post("/draft", requirePermission("grievances.view"), asyncHandler(async (
     return;
   }
 
-  const userPrompt = `Please draft a formal Unifor grievance based on the following incident:
+  const userPrompt = `Draft a formal Unifor grievance for the following incident. Return ONLY plain text using the labeled sections below — no JSON, no markdown, no backticks, no formatting symbols.
 
+INCIDENT DETAILS:
 WHAT HAPPENED: ${whatHappened.trim()}
 DATE OF INCIDENT: ${incidentDate || "Not specified"}
 MEMBER(S) INVOLVED: ${membersInvolved || "Not specified"}
@@ -119,41 +137,54 @@ GRIEVANCE TYPE: ${grievanceType || "Not specified"}
 COLLECTIVE AGREEMENT TEXT FOR REFERENCE:
 ${cbaText}
 
-Respond with a JSON object using exactly these keys:
-{
-  "suggestedTitle": "A concise grievance title (max 80 chars)",
-  "suggestedArticles": "Comma-separated CBA article references violated",
-  "suggestedRemedy": "The remedy sought in formal language",
-  "suggestedStep": 1,
-  "draft": "The full formal grievance text with labelled sections: STATEMENT OF GRIEVANCE, ARTICLES VIOLATED, JUST CAUSE PRINCIPLES BREACHED, REMEDY SOUGHT, PROCEDURAL STEP"
-}`;
+Respond using ONLY these plain text labels in this exact order. Put content on the lines immediately after each label:
+
+GRIEVANCE_TITLE:
+A concise grievance title (max 80 characters)
+
+ARTICLES_VIOLATED:
+Comma-separated list of CBA article references that were violated
+
+REMEDY_SOUGHT:
+The remedy sought in formal grievance language
+
+PROCEDURAL_STEP:
+The recommended step number (1, 2, 3, 4, or 5)
+
+GRIEVANCE_DRAFT:
+The full formal grievance text. Plain text only. Label each section: STATEMENT OF GRIEVANCE, ARTICLES VIOLATED, JUST CAUSE PRINCIPLES BREACHED, REMEDY SOUGHT, PROCEDURAL STEP`;
 
   const result = await ai.models.generateContent({
     model: GEMINI_MODEL,
     contents: [{ role: "user", parts: [{ text: userPrompt }] }],
     config: {
       systemInstruction: GRIEVANCE_DRAFT_SYSTEM_PROMPT,
-      responseMimeType: "application/json",
       maxOutputTokens: GEMINI_MAX_TOKENS,
     },
   });
 
-  const text = result.text ?? "";
+  const rawText = result.text ?? "";
 
-  let parsed: Record<string, unknown>;
-  try {
-    parsed = JSON.parse(text);
-  } catch {
-    res.status(502).json({ error: "AI returned an unparseable response. Please try again." });
+  logger.info({ rawLength: rawText.length, preview: rawText.slice(0, 300) }, "grievance /draft raw Gemini response");
+
+  if (!rawText.trim()) {
+    res.status(502).json({ error: "AI draft unavailable — please try again or draft manually" });
     return;
   }
 
+  const suggestedTitle    = extractSection(rawText, "GRIEVANCE_TITLE").slice(0, 80);
+  const suggestedArticles = extractSection(rawText, "ARTICLES_VIOLATED");
+  const suggestedRemedy   = extractSection(rawText, "REMEDY_SOUGHT");
+  const stepRaw           = extractSection(rawText, "PROCEDURAL_STEP");
+  const suggestedStep     = parseInt(stepRaw, 10) || 1;
+  const draft             = extractSection(rawText, "GRIEVANCE_DRAFT") || rawText.trim();
+
   res.json({
-    suggestedTitle: parsed.suggestedTitle ?? "",
-    suggestedArticles: parsed.suggestedArticles ?? "",
-    suggestedRemedy: parsed.suggestedRemedy ?? "",
-    suggestedStep: parsed.suggestedStep ?? 1,
-    draft: parsed.draft ?? "",
+    suggestedTitle,
+    suggestedArticles,
+    suggestedRemedy,
+    suggestedStep,
+    draft,
   });
 }));
 
