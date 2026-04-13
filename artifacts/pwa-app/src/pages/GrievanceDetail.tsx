@@ -474,6 +474,24 @@ export default function GrievanceDetail() {
               className="h-12 rounded-xl bg-card" />
           </div>
 
+          {(grievance as any).incidentDate && (
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Incident Date</label>
+              <div className="h-12 rounded-xl bg-card border border-border px-4 flex items-center text-sm font-medium">
+                {(grievance as any).incidentDate}
+              </div>
+            </div>
+          )}
+
+          {(grievance as any).remedyRequested && (
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Remedy Requested</label>
+              <div className="rounded-xl bg-card border border-border px-4 py-3 text-sm leading-relaxed">
+                {(grievance as any).remedyRequested}
+              </div>
+            </div>
+          )}
+
           <div className="space-y-2">
             <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Description</label>
             <Textarea value={description} onChange={(e) => setDescription(e.target.value)}

@@ -316,6 +316,7 @@ router.post("/", requirePermission("grievances.file"), asyncHandler(async (req, 
   }
 
   const d = parsed.data;
+  const rawBody = req.body as Record<string, unknown>;
   const step = d.step ?? 1;
 
   // Auto-calculate due_date from local_settings if not provided
@@ -339,13 +340,13 @@ router.post("/", requirePermission("grievances.file"), asyncHandler(async (req, 
       filedDate: new Date(d.filedDate as unknown as string).toISOString().split("T")[0],
       dueDate,
       notes: d.notes ?? null,
-      accommodationRequest: (d as Record<string, unknown>).accommodationRequest as boolean ?? false,
-      grievanceType: (d as Record<string, unknown>).grievanceType as string ?? null,
-      incidentDate: (d as Record<string, unknown>).incidentDate
-        ? new Date((d as Record<string, unknown>).incidentDate as string).toISOString().split("T")[0]
+      accommodationRequest: rawBody.accommodationRequest as boolean ?? false,
+      grievanceType: rawBody.grievanceType as string ?? null,
+      incidentDate: rawBody.incidentDate
+        ? new Date(rawBody.incidentDate as string).toISOString().split("T")[0]
         : null,
-      remedyRequested: (d as Record<string, unknown>).remedyRequested as string ?? null,
-      outcome: (d as Record<string, unknown>).outcome as string ?? "pending",
+      remedyRequested: rawBody.remedyRequested as string ?? null,
+      outcome: rawBody.outcome as string ?? "pending",
     })
     .returning();
 
@@ -436,6 +437,7 @@ router.patch("/:id", requirePermission("grievances.file"), asyncHandler(async (r
   }
 
   const d = bodyParsed.data;
+  const raw = req.body as Record<string, unknown>;
   const updates: Record<string, unknown> = { updatedAt: new Date() };
 
   if (d.memberId !== undefined) updates.memberId = d.memberId;
@@ -447,22 +449,13 @@ router.patch("/:id", requirePermission("grievances.file"), asyncHandler(async (r
   if (d.resolvedDate !== undefined) updates.resolvedDate = d.resolvedDate ? new Date(d.resolvedDate as unknown as string).toISOString().split("T")[0] : null;
   if (d.resolution !== undefined) updates.resolution = d.resolution;
   if (d.notes !== undefined) updates.notes = d.notes;
-  if ((d as Record<string, unknown>).accommodationRequest !== undefined) {
-    updates.accommodationRequest = (d as Record<string, unknown>).accommodationRequest;
+  if (raw.accommodationRequest !== undefined) updates.accommodationRequest = raw.accommodationRequest;
+  if (raw.grievanceType !== undefined) updates.grievanceType = raw.grievanceType;
+  if (raw.incidentDate !== undefined) {
+    updates.incidentDate = raw.incidentDate ? new Date(raw.incidentDate as string).toISOString().split("T")[0] : null;
   }
-  if ((d as Record<string, unknown>).grievanceType !== undefined) {
-    updates.grievanceType = (d as Record<string, unknown>).grievanceType;
-  }
-  if ((d as Record<string, unknown>).incidentDate !== undefined) {
-    const raw = (d as Record<string, unknown>).incidentDate;
-    updates.incidentDate = raw ? new Date(raw as string).toISOString().split("T")[0] : null;
-  }
-  if ((d as Record<string, unknown>).remedyRequested !== undefined) {
-    updates.remedyRequested = (d as Record<string, unknown>).remedyRequested;
-  }
-  if ((d as Record<string, unknown>).outcome !== undefined) {
-    updates.outcome = (d as Record<string, unknown>).outcome;
-  }
+  if (raw.remedyRequested !== undefined) updates.remedyRequested = raw.remedyRequested;
+  if (raw.outcome !== undefined) updates.outcome = raw.outcome;
 
   // Handle step change — recalculate due_date unless explicitly provided
   if (d.step !== undefined) {

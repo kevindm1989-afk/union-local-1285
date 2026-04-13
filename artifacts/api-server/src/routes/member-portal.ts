@@ -170,7 +170,7 @@ router.post("/grievances", requireMemberAccess, grievanceCreateLimiter, asyncHan
  * GET /member-portal/bulletins — active bulletin feed (published, not expired)
  */
 router.get("/bulletins", requireMemberAccess, asyncHandler(async (req: Request, res: Response) => {
-  const memberId = req.session.linkedMemberId ?? null;
+  const memberId = req.session.linkedMemberId ?? req.session.userId ?? null;
   const client = await pool.connect();
   try {
     const result = await client.query(

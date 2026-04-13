@@ -1,23 +1,22 @@
-# Union Local 1285 — Steward App
+# Union Local 1285 — Unionize Steward App
 
 ## Overview
 
-Mobile PWA for Union Local 1285 stewards to manage member records, track grievances, post bulletins, and access CBA documents. Built as a pnpm monorepo with a React + Vite frontend and Express API server backed by PostgreSQL. Full RBAC system with role-configurable permissions. Includes a Claude AI assistant (CBA Q&A) powered by Anthropic via Replit AI Integrations.
+Mobile PWA for Unifor Local 1285 stewards to manage member records, track grievances, post bulletins, and access CBA documents. Built as a pnpm monorepo with a React + Vite frontend and Express API server backed by Neon cloud PostgreSQL. Full RBAC system with role-configurable permissions. Includes a Gemini AI assistant (CBA Q&A) and AI-powered grievance drafting.
 
 ## Stack
 
 - **Monorepo tool**: pnpm workspaces
 - **Node.js version**: 24
-- **Package manager**: pnpm
-- **TypeScript version**: 5.9
 - **API framework**: Express 5
-- **Database**: Replit Helium PostgreSQL (internal, via `DATABASE_URL=postgresql://postgres@helium/heliumdb`)
-- **ORM**: Drizzle ORM — **must use `drizzle-orm/neon-serverless`** (not `neon-http`) because the DB is Helium, not Neon cloud; the neon-http driver silently drops UPDATEs against Helium
+- **Database**: Neon cloud PostgreSQL (`NEON_DATABASE_URL`) via `drizzle-orm/neon-serverless`
+- **ORM**: Drizzle ORM
 - **Validation**: Zod (`zod/v4`), `drizzle-zod`
-- **API codegen**: Orval (from OpenAPI spec)
-- **Frontend**: React + Vite + shadcn/ui + TanStack Query
-- **Routing**: Wouter
-- **Build**: esbuild (CJS bundle)
+- **API codegen**: Orval (from OpenAPI spec) — **do NOT edit generated files in `lib/api-zod/`**
+- **Frontend**: React + Vite + shadcn/ui + TanStack Query + Wouter
+- **AI**: Google Gemini (`gemini-2.5-flash` for main, `gemini-2.5-flash-lite` for quick tasks)
+- **Push notifications**: Web Push API (VAPID keys in secrets)
+- **Email**: Resend (via Replit integration)
 
 ## Artifacts
 
@@ -28,96 +27,87 @@ Mobile PWA for Union Local 1285 stewards to manage member records, track grievan
 
 ## Database Schema
 
-- **members** — union member records (+ seniority_date, dues_status, dues_last_paid, shift, classification_date)
-- **grievances** — grievance tracking (steps 1–5 incl. Arbitration, accommodation_request flag; due_date auto-calculated from local_settings)
-- **grievance_notes** — per-grievance activity timeline (manual notes + auto-logged status/step changes)
-- **announcements** — bulletins/announcements (title, content, category, is_urgent, published_at)
-- **member_files** — attached documents per member (category: general/discipline/grievance)
-- **audit_logs** — immutable trail of create/update/delete on members & grievances
-- **local_settings** — configurable key-value store (e.g. `grievance_deadline_step_N` days)
-- **access_requests** — member access request system (status: pending/approved/rejected, firstName, lastName, email, employeeId, department, requestedRole, roleJustification, reviewedBy, rejectionReason)
+- **members** — `seniority_rank`, `accommodation_active`, `steward_notes`, `card_signed` added
+- **grievances** — `grievance_type`, `incident_date`, `remedy_requested`, `outcome` added
+- **announcements** — `urgency_level`, `scheduled_for`, `is_published`, `expires_at` added; 10 categories
+- **meetings** — `agenda_items` (jsonb), `attendance_data` (jsonb) added
+- **documents** — `steward_only` (boolean) added
+- **bulletin_acknowledgements** — tracks per-member bulletin reads
+- **bulletin_responses** — tracks mobilization responses (`im_in`/`need_info`)
+- **grievance_notes**, **audit_logs**, **local_settings**, **access_requests**, **member_files**, **discipline_records**, **push_subscriptions**
 
-## API Routes
+All schema additions done via `ensureAdvancedFeatureTables()` raw SQL `ADD COLUMN IF NOT EXISTS` on startup.
 
-- `GET/POST /api/members` — member list & create
-- `GET/PATCH/DELETE /api/members/:id` — member CRUD
-- `GET /api/members/:id/grievances` — member's grievances
-- `GET/POST /api/grievances` — grievance list & create
-- `GET/PATCH/DELETE /api/grievances/:id` — grievance CRUD
-- `GET /api/grievances/stats/summary` — grievance stats
-- `GET /api/grievances/:id/notes` — per-grievance activity timeline
-- `POST /api/grievances/:id/notes` — add a note (requires grievances.file); auto-notes on status/step changes
-- `GET/POST /api/announcements` — bulletin list & create
-- `GET/PATCH/DELETE /api/announcements/:id` — bulletin CRUD
-- `GET /api/dashboard/summary` — dashboard stats
-- `GET /api/dashboard/recent-activity` — recent grievances & bulletins
-- `GET /api/audit-logs` — admin audit trail (requires members.edit); supports entityType filter
+## API Routes (key)
 
-## PWA Pages
+- `GET/POST /api/members` — member list & create (cardSigned, seniorityRank, accommodationActive, stewardNotes)
+- `GET/PATCH/DELETE /api/members/:id` — member CRUD (role-based field filtering)
+- `GET/POST /api/grievances` — grievance list & create (grievanceType, incidentDate, remedyRequested from `req.body` not parsed `d`)
+- `GET/PATCH/DELETE /api/grievances/:id` — grievance CRUD (same `req.body` pattern for extra fields)
+- `GET/POST /api/announcements` — bulletin list (`?view=active|scheduled|archived`) & create (category bypass via rawCategory)
+- `POST /api/announcements/:id/acknowledge` — member bulletin ack (uses `linkedMemberId ?? userId`)
+- `POST /api/announcements/:id/respond` — mobilization response (uses `linkedMemberId ?? userId`)
+- `GET /api/announcements/:id/acknowledgements` — steward: ack dashboard (rate, list)
+- `GET /api/announcements/:id/responses` — steward: mobilization response breakdown
+- `POST /api/announcements/:id/notify-unacknowledged` — send push to unacked members
+- `GET /api/member-portal/bulletins` — member feed (isAcknowledged, myResponse, uses `linkedMemberId ?? userId`)
 
-- **Dashboard** — stats tiles + recent grievances + recent bulletins
-- **Members** — searchable directory + create/edit/delete
-- **Grievances** — filtered list (by status) + create/edit/delete + step tracking
-- **Bulletins** — announcement list (urgent pinned) + create/delete
+## Key Bug Fixes
 
-## Key Commands
+- **api-zod category bypass**: `CreateAnnouncementBody` only has 5 categories — strip category before parsing, validate separately with `ANNOUNCEMENT_CATEGORIES.includes()`
+- **api-zod extra fields stripping**: `UpdateGrievanceBody` strips `incidentDate`/`remedyRequested` — always read these from `req.body` (`rawBody`) not from parsed `d`
+- **Acknowledge/respond fallback**: Uses `linkedMemberId ?? userId` so unlinked member accounts still work
 
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- `pnpm --filter @workspace/api-server run dev` — run API server locally
+## Frontend Pages
 
-## Grievance Statuses
-`open` | `pending_response` | `pending_hearing` | `resolved` | `withdrawn`
+- **BulletinCreate** (`/bulletins/new`) — 10 categories, urgencyLevel auto-set by category, scheduledFor + expiresAt fields, red/blue warning banners
+- **Bulletins** (`/bulletins`) — Active/Scheduled/Archived tabs, Emergency overlay (full-screen red modal for critical), EmergencyBanner inline, category chips
+- **BulletinDetail** (`/bulletins/:id`) — Steward Tools: Ack Dashboard (expandable, rate bar, notify button), Mobilization Responses (I'm In / Need Info counts)
+- **MemberPortalBulletins** (`/portal/bulletins`) — Acknowledge button per card, I'm In/Need More Info for mobilization bulletins
+- **GrievanceCreate** (`/grievances/new`) — grievanceType, incidentDate, remedyRequested fields
+- **GrievanceDetail** (`/grievances/:id`) — step tracker (Steps 1-4+Arbitration), incidentDate + remedyRequested display fields, outcome select
+- **MemberCreate** (`/members/new`) — shift, seniorityDate, duesStatus, cardSigned toggle
+- **MemberDetail** (`/members/:id`) — all new fields + role-based visibility (stewardNotes admin-only)
+- **MeetingDetail** (`/meetings/:id`) — agenda builder (add/remove items), attendance tracking
+- **Documents** (`/documents`) — search bar, stewardOnly badge/toggle
+- **CbaAssistant** (`/assistant`) — quick-action suggestion chips, Gemini AI chat about CBA
 
-## Dues Statuses
-`current` | `delinquent` | `suspended` | `exempt`
+## Critical Patterns
+
+- **api-zod generated files**: Do NOT modify `lib/api-zod/src/generated/`. Use `req.body` directly for fields not in generated schemas, cast with `as any` where needed.
+- **New Drizzle fields**: Added `as any` casting for new columns not yet in generated types (e.g. `(updates as any).cardSigned`)
+- **Pool usage**: `pool.connect()` → `client.query()` → `client.release()` in try/finally for raw SQL
+- **Route ordering**: Sub-routes (`/scheduled`, `/archived`, `/acknowledge`) must be mounted BEFORE `/:id`
+- **Gemini constants**: `GEMINI_FLASH_LITE_MODEL = 'gemini-2.5-flash-lite'`, `GEMINI_MODEL = 'gemini-2.5-flash'` in `artifacts/api-server/src/lib/anthropic/constants.ts`
+- **Session fields**: `req.session.role`, `req.session.userId`, `req.session.linkedMemberId`
+
+## Announcement Categories (10 total)
+
+`general` | `urgent` | `contract` | `meeting` | `action` | `safety_alert` | `strike_action` | `job_action` | `vote_notice` | `policy_change`
+
+Mobilization categories (show I'm In / Need More Info): `job_action`, `strike_action`, `action`
+Critical/emergency categories (full-screen overlay): `safety_alert`, `strike_action`, `job_action`
 
 ## Required Secrets
 
-The API server will **refuse to start** if any of these are missing in production:
-
-| Secret | Where to set | Notes |
-|---|---|---|
-| `ADMIN_PASSWORD` | `fly secrets set ADMIN_PASSWORD=<value>` | **Mandatory.** No default. Server exits with a fatal error if unset. Use a strong random value (≥16 chars). |
-| `ADMIN_USERNAME` | `fly secrets set ADMIN_USERNAME=<value>` | Optional — defaults to `"admin"` if unset. |
-| `DATABASE_URL` | Neon dashboard → Connection string | PostgreSQL connection string. |
-| `ANTHROPIC_API_KEY` | Replit Secrets (AI integration) | Required for the AI assistant feature. |
-
-> **Never commit credential values.** `fly.toml` contains only a reference comment for `ADMIN_PASSWORD`.
-> Run `fly secrets list` to verify secrets are present before deploying.
+| Secret | Notes |
+|---|---|
+| `ADMIN_PASSWORD` | Mandatory — no fallback. Server exits if absent. |
+| `NEON_DATABASE_URL` | Neon cloud PostgreSQL connection string |
+| `GEMINI_API_KEY` | Gemini AI for CBA assistant + grievance drafting |
+| `ANTHROPIC_API_KEY` | Optional — legacy; Gemini is primary AI |
+| `VAPID_PRIVATE_KEY` | Web Push notifications |
 
 ## Security Features
-- Password strength: min 12 chars, upper+lower+digit+special required (enforced on user create/reset)
-- Idle auto-logout: 30 minutes of inactivity signs user out
-- Audit logging: all member/grievance CRUD logged to `audit_logs` with IP, user, old/new values
-- **No hardcoded credentials** — `ADMIN_PASSWORD` has no fallback; server exits at startup if the env var is absent
 
-## Grievance Enhancements
-- Steps 1–5 (Step 5 = Arbitration with 30-day deadline)
-- `accommodation_request` flag (ADA) on each grievance
-- `isOverdue` computed field (due_date past + non-terminal status)
-- Due dates auto-calculated from `local_settings` (`grievance_deadline_step_N`) on create or step change
-- Overdue/ADA badges visible in list and detail views
+- Password strength: min 12 chars, upper+lower+digit+special required
+- Idle auto-logout: 30 minutes of inactivity
+- Audit logging: all member/grievance CRUD logged to `audit_logs`
+- RBAC: permissions configurable per role in Admin panel
+- stewardOnly documents hidden from member-role users
 
 ## Email Notifications
-- Provider: **Resend** (via Replit integration — no SMTP credentials needed)
-- Trigger events: new grievance filed, grievance status changed, new access request
-- Recipient: admin email — set in Admin → Config tab (stored in `local_settings.admin_email`) or `ADMIN_EMAIL` env var
-- All notifications are fire-and-forget (never block the API response)
-- Notifications silently skip if no admin email is configured
 
-## Admin Panel Config Tab
-New "Config" tab in the Admin panel (`/admin`) for:
-- Admin notification email (stored in `local_settings`)
-- Portal URL for email links (defaults to Fly.io URL)
-- Grievance step deadlines (days per step 1–5)
-
-## Settings API
-- `GET /api/settings` — returns all local_settings as `{ key: { value, description } }`
-- `PATCH /api/settings` — updates one or more allowed keys
-- Requires `members.edit` permission
-
-## Announcement Categories
-`general` | `urgent` | `contract` | `meeting` | `action`
+- Provider: Resend (via Replit integration)
+- Events: grievance filed, status changed, new access request
+- Admin email configured in Admin → Config (`local_settings.admin_email`)

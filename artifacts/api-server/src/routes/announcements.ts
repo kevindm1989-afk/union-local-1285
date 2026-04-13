@@ -262,7 +262,9 @@ router.delete("/:id", requirePermission("bulletins.manage"), asyncHandler(async 
 router.post("/:id/acknowledge", asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
   if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
-  const memberId = req.session?.linkedMemberId;
+  if (!req.session?.userId) { res.status(401).json({ error: "Not authenticated" }); return; }
+  // Use linkedMemberId if available, otherwise use userId as the member identifier
+  const memberId = req.session?.linkedMemberId ?? req.session?.userId ?? null;
   if (!memberId) { res.status(403).json({ error: "No member account linked to this session" }); return; }
 
   const client = await pool.connect();
@@ -375,7 +377,8 @@ router.post("/:id/notify-unacknowledged", requireSteward, asyncHandler(async (re
 router.post("/:id/respond", asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
   if (!id) { res.status(400).json({ error: "Invalid ID" }); return; }
-  const memberId = req.session?.linkedMemberId;
+  if (!req.session?.userId) { res.status(401).json({ error: "Not authenticated" }); return; }
+  const memberId = req.session?.linkedMemberId ?? req.session?.userId ?? null;
   if (!memberId) { res.status(403).json({ error: "No member account linked" }); return; }
 
   const { response } = req.body ?? {};
