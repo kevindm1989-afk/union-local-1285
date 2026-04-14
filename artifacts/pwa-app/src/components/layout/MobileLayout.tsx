@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { LayoutDashboard, Users, FileText, Bell, Bot, FolderOpen, Plus, LogOut, ChevronDown, ShieldCheck, CalendarDays, BellRing, BellOff, Sun, Moon, BarChart2, MapPin, Vote, Scale, Handshake, MessageSquareWarning, Trophy, Gavel } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -13,6 +13,8 @@ export function MobileLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
   const { roleLabel, can } = usePermissions();
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({});
   const { status: pushStatus, subscribe, unsubscribe } = usePushNotifications();
   const { isDark, toggle } = useTheme();
 
@@ -80,7 +82,19 @@ export function MobileLayout({ children }: { children: React.ReactNode }) {
         <div className="flex items-center justify-end px-4 py-2 border-b border-border/50 bg-background/95 backdrop-blur-sm relative z-30">
           <div className="relative">
             <button
-              onClick={() => setShowUserMenu((v) => !v)}
+              ref={menuButtonRef}
+              onClick={() => {
+                if (!showUserMenu && menuButtonRef.current) {
+                  const r = menuButtonRef.current.getBoundingClientRect();
+                  setMenuStyle({
+                    position: "fixed",
+                    top: r.bottom + 4,
+                    right: window.innerWidth - r.right,
+                    maxHeight: `calc(100dvh - ${r.bottom + 12}px)`,
+                  });
+                }
+                setShowUserMenu((v) => !v);
+              }}
               className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors py-1 px-2 rounded-lg hover:bg-muted/50"
             >
               <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
@@ -98,7 +112,7 @@ export function MobileLayout({ children }: { children: React.ReactNode }) {
                   className="fixed inset-0 z-40"
                   onClick={() => setShowUserMenu(false)}
                 />
-                <div className="absolute right-0 top-full mt-1 z-50 bg-popover border border-border rounded-xl shadow-xl min-w-[180px] overflow-y-auto max-h-[calc(100dvh-4rem)]">
+                <div style={menuStyle} className="z-[60] bg-popover border border-border rounded-xl shadow-xl min-w-[180px] overflow-y-auto">
                   <div className="px-3 py-2.5 border-b border-border">
                     <p className="text-xs font-bold text-foreground">{user.displayName}</p>
                     <p className="text-[10px] text-muted-foreground mt-0.5">@{user.username}</p>
