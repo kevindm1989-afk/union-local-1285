@@ -338,6 +338,15 @@ export default function Admin() {
     enabled: tab === "audit",
   });
 
+  const clearAuditLogs = useMutation({
+    mutationFn: () => fetchJson("/api/audit-logs", { method: "DELETE" }),
+    onSuccess: (data: { cleared?: number }) => {
+      toast({ title: "Audit log cleared", description: `Removed ${data?.cleared ?? 0} entries.` });
+      queryClient.invalidateQueries({ queryKey: ["/audit-logs"] });
+    },
+    onError: (err: Error) => toast({ title: "Failed to clear", description: err.message, variant: "destructive" }),
+  });
+
   function initSettings(data: SettingsMap) {
     const init: Record<string, string> = {};
     for (const key of ["admin_email", "portal_url",
@@ -947,9 +956,27 @@ export default function Admin() {
               </select>
               <button
                 onClick={() => refetchAudit()}
+                title="Refresh"
                 className="h-9 w-9 flex items-center justify-center rounded-xl border border-border bg-card hover:bg-muted transition-colors"
               >
                 <RefreshCw className="w-4 h-4 text-muted-foreground" />
+              </button>
+              <button
+                onClick={() => {
+                  const total = auditData?.total ?? 0;
+                  if (total === 0) {
+                    toast({ title: "Nothing to clear", description: "The audit log is already empty." });
+                    return;
+                  }
+                  if (confirm(`Permanently delete all ${total} audit log entries? This cannot be undone.`)) {
+                    clearAuditLogs.mutate();
+                  }
+                }}
+                disabled={clearAuditLogs.isPending}
+                title="Clear all audit logs"
+                className="h-9 w-9 flex items-center justify-center rounded-xl border border-destructive/30 bg-destructive/5 hover:bg-destructive/10 text-destructive transition-colors disabled:opacity-50"
+              >
+                {clearAuditLogs.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
               </button>
             </div>
 

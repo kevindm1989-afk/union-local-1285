@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { pool } from "@workspace/db";
+import { requireAdmin } from "../lib/permissions";
 
 const router = Router();
 
@@ -45,6 +46,18 @@ router.get("/", async (req, res) => {
     );
 
     res.json({ logs: rows, total: countRows[0].total, limit, offset });
+  } finally {
+    client.release();
+  }
+});
+
+router.delete("/", requireAdmin, async (_req, res) => {
+  const client = await pool.connect();
+  try {
+    const { rows } = await client.query("SELECT count(*)::int AS n FROM audit_logs");
+    const cleared = rows[0].n;
+    await client.query("TRUNCATE TABLE audit_logs RESTART IDENTITY");
+    res.json({ ok: true, cleared });
   } finally {
     client.release();
   }
