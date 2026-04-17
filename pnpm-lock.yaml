@@ -394,6 +394,9 @@ importers:
       signature_pad:
         specifier: ^5.1.3
         version: 5.1.3
+      workbox-background-sync:
+        specifier: ^7.4.0
+        version: 7.4.0
     devDependencies:
       '@hookform/resolvers':
         specifier: ^3.10.0

@@ -225,12 +225,23 @@ function EntryForm({ onClose, onSaved, isOnline }: EntryFormProps) {
     };
 
     if (!isOnline) {
-      // Save to IndexedDB
+      // Save to IndexedDB (snake_case to match PendingEntry / DB schema)
       const pending: PendingEntry = {
-        ...payload,
         tempId: `pending-${Date.now()}-${Math.random().toString(36).slice(2)}`,
         createdAt: Date.now(),
-      } as PendingEntry;
+        incident_type: payload.incidentType,
+        incident_date: payload.incidentDate,
+        incident_time: payload.incidentTime ?? undefined,
+        shift: payload.shift,
+        location: payload.location,
+        department: payload.department ?? undefined,
+        description: payload.description,
+        persons_involved: payload.personsInvolved ?? undefined,
+        management_documentation_issued: payload.managementDocumentationIssued,
+        union_rep_present: payload.unionRepPresent,
+        steward_notified: payload.stewardNotified,
+        urgent: payload.urgent,
+      };
       try {
         await idbPut(pending);
         toast({ title: "Saved offline — will sync when connected" });

@@ -86,8 +86,41 @@ export default defineConfig({
               expiration: { maxEntries: 100, maxAgeSeconds: 30 * 60 },
             },
           },
+          {
+            urlPattern: /\/api\/(grievances|members)(\/.*)?$/,
+            handler: "NetworkOnly",
+            method: "POST",
+            options: {
+              backgroundSync: {
+                name: "offline-writes",
+                options: { maxRetentionTime: 24 * 60 },
+              },
+            },
+          },
+          {
+            urlPattern: /\/api\/(grievances|members)(\/.*)?$/,
+            handler: "NetworkOnly",
+            method: "PATCH",
+            options: {
+              backgroundSync: {
+                name: "offline-writes",
+                options: { maxRetentionTime: 24 * 60 },
+              },
+            },
+          },
+          {
+            urlPattern: /\/api\/(grievances|members)(\/.*)?$/,
+            handler: "NetworkOnly",
+            method: "DELETE",
+            options: {
+              backgroundSync: {
+                name: "offline-writes",
+                options: { maxRetentionTime: 24 * 60 },
+              },
+            },
+          },
         ],
-        navigateFallback: null,
+        navigateFallback: "index.html",
       },
       devOptions: {
         enabled: false,

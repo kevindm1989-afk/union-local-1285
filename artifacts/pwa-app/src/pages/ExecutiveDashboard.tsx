@@ -240,7 +240,7 @@ export default function ExecutiveDashboard() {
                     </AlertBanner>
                   )}
                   {data.seniorityDisputes.activePatterns.map((p) => (
-                    <AlertBanner key={p.type} severity="warning">
+                    <AlertBanner key={p.dispute_type} severity="warning">
                       <strong>Seniority pattern:</strong> {p.count} {capitalize(p.dispute_type)} disputes in 60 days
                     </AlertBanner>
                   ))}
