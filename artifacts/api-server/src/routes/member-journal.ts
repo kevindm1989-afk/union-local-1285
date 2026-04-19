@@ -144,7 +144,7 @@ router.post(
     const memberId = requireLinkedMember(req, res);
     if (memberId === null) return;
 
-    const entryId = parseInt(req.params.id, 10);
+    const entryId = parseInt(String(req.params.id), 10);
     if (isNaN(entryId)) { res.status(400).json({ error: "Invalid entry id" }); return; }
 
     const { content } = req.body;
@@ -185,7 +185,7 @@ router.post(
     const memberId = requireLinkedMember(req, res);
     if (memberId === null) return;
 
-    const entryId = parseInt(req.params.id, 10);
+    const entryId = parseInt(String(req.params.id), 10);
     if (isNaN(entryId)) { res.status(400).json({ error: "Invalid entry id" }); return; }
 
     const client = await pool.connect();
@@ -307,7 +307,7 @@ router.get(
     const memberId = requireLinkedMember(req, res);
     if (memberId === null) return;
 
-    const entryId = parseInt(req.params.id, 10);
+    const entryId = parseInt(String(req.params.id), 10);
     if (isNaN(entryId)) { res.status(400).json({ error: "Invalid entry id" }); return; }
 
     const client = await pool.connect();
@@ -352,7 +352,7 @@ router.delete(
     const memberId = requireLinkedMember(req, res);
     if (memberId === null) return;
 
-    const entryId = parseInt(req.params.id, 10);
+    const entryId = parseInt(String(req.params.id), 10);
     if (isNaN(entryId)) { res.status(400).json({ error: "Invalid entry id" }); return; }
 
     const client = await pool.connect();

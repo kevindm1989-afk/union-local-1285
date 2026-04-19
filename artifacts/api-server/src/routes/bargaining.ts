@@ -243,7 +243,7 @@ router.post(
 router.get(
   "/reports/:id",
   asyncHandler(async (req, res) => {
-    const id = parseInt(req.params.id, 10);
+    const id = parseInt(String(req.params.id), 10);
     const [report] = await db.select().from(bargainingReportsTable).where(eq(bargainingReportsTable.id, id));
     if (!report) { res.status(404).json({ error: "Report not found" }); return; }
     res.json(report);
@@ -254,7 +254,7 @@ router.get(
 router.patch(
   "/reports/:id",
   asyncHandler(async (req, res) => {
-    const id = parseInt(req.params.id, 10);
+    const id = parseInt(String(req.params.id), 10);
     const { title, editedLanguage, status } = req.body;
     const [updated] = await db
       .update(bargainingReportsTable)
@@ -270,7 +270,7 @@ router.patch(
 router.delete(
   "/reports/:id",
   asyncHandler(async (req, res) => {
-    const id = parseInt(req.params.id, 10);
+    const id = parseInt(String(req.params.id), 10);
     await db.delete(bargainingReportsTable).where(eq(bargainingReportsTable.id, id));
     res.json({ ok: true });
   })

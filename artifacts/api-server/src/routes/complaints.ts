@@ -113,7 +113,7 @@ router.post(
         parsed = m ? JSON.parse(m[0]) : {};
       }
 
-      aiCategory = (parsed.confirmedCategory as string) ?? category;
+      aiCategory = ((parsed.confirmedCategory as string) ?? category) as typeof aiCategory;
       aiRecommendation = (parsed.recommendation as string) ?? "monitor";
       aiExplanation = (parsed.explanation as string) ?? "";
       aiPatternFlag = Boolean(parsed.patternMatch);
@@ -249,7 +249,7 @@ router.get(
 router.get(
   "/:id",
   asyncHandler(async (req: Request, res: Response) => {
-    const id = parseInt(req.params.id, 10);
+    const id = parseInt(String(req.params.id), 10);
     if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
 
     const staff = isStaff(req);
@@ -282,7 +282,7 @@ router.patch(
   "/:id",
   requireSteward,
   asyncHandler(async (req: Request, res: Response) => {
-    const id = parseInt(req.params.id, 10);
+    const id = parseInt(String(req.params.id), 10);
     if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
 
     const parsed = updateSchema.safeParse(req.body);
@@ -307,7 +307,7 @@ router.delete(
   "/:id",
   requireSteward,
   asyncHandler(async (req: Request, res: Response) => {
-    const id = parseInt(req.params.id, 10);
+    const id = parseInt(String(req.params.id), 10);
     await db.delete(memberComplaintsTable).where(eq(memberComplaintsTable.id, id));
     res.json({ ok: true });
   })
