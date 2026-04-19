@@ -342,7 +342,7 @@ export default function Admin() {
     mutationFn: () => fetchJson("/api/audit-logs", { method: "DELETE" }),
     onSuccess: (data: { cleared?: number }) => {
       toast({ title: "Audit log cleared", description: `Removed ${data?.cleared ?? 0} entries.` });
-      queryClient.invalidateQueries({ queryKey: ["/audit-logs"] });
+      qc.invalidateQueries({ queryKey: ["/audit-logs"] });
     },
     onError: (err: Error) => toast({ title: "Failed to clear", description: err.message, variant: "destructive" }),
   });
