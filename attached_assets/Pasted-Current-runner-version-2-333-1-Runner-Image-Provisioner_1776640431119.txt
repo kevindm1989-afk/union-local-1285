@@ -1,0 +1,280 @@
+Current runner version: '2.333.1'
+Runner Image Provisioner
+Operating System
+Runner Image
+GITHUB_TOKEN Permissions
+Secret source: Actions
+Prepare workflow directory
+Prepare all required actions
+Getting action download info
+Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+Download action repository 'superfly/flyctl-actions@master' (SHA:ed8efb33836e8b2096c7fd3ba1c8afe303ebbff1)
+Complete job name: Deploy
+1s
+Run actions/checkout@v4
+Syncing repository: kevindm1989-afk/UNIONIZE
+Getting Git version info
+Temporarily overriding HOME='/home/runner/work/_temp/92930001-9b98-45fa-90e2-262f081ea1c0' before making global git config changes
+Adding repository directory to the temporary git global config as a safe directory
+/usr/bin/git config --global --add safe.directory /home/runner/work/UNIONIZE/UNIONIZE
+Deleting the contents of '/home/runner/work/UNIONIZE/UNIONIZE'
+Initializing the repository
+Disabling automatic garbage collection
+Setting up auth
+Fetching the repository
+Determining the checkout info
+/usr/bin/git sparse-checkout disable
+/usr/bin/git config --local --unset-all extensions.worktreeConfig
+Checking out the ref
+/usr/bin/git log -1 --format=%H
+205c8b66c77aebc75313e3cdb0654675388bd751
+1s
+Run superfly/flyctl-actions/setup-flyctl@master
+Acquired 0.4.36 from https://github.com/superfly/flyctl/releases/download/v0.4.36/flyctl_0.4.36_Linux_x86_64.tar.gz
+/usr/bin/tar xz --warning=no-unknown-keyword --overwrite -C /home/runner/work/_temp/70a331f2-b5f2-4e75-a95f-f5d19e8c532b -f /home/runner/work/_temp/84ad287e-59a0-4b75-9b70-34e5bf8cf734
+Successfully cached flyctl to /opt/hostedtoolcache/flyctl/0.4.36/x86_64
+Added flyctl to the path
+1s
+Run # Skip check if FLY_API_TOKEN is not available (can't authenticate)
+✅ All required secrets are present.
+0s
+Run if [ -z "$FLY_API_TOKEN" ]; then
+Tigris bucket already linked, skipping.
+48s
+Run flyctl deploy --remote-only
+==> Verifying app config
+--> Verified app config
+Validating /home/runner/work/UNIONIZE/UNIONIZE/fly.toml
+✓ Configuration is valid
+==> Building image
+Waiting for depot builder...
+
+==> Building image with Depot
+--> build:  (​)
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 2.08kB 0.1s done
+#1 DONE 0.1s
+
+#2 [internal] load metadata for docker.io/library/node:20-alpine
+#2 DONE 0.3s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 426B 0.1s done
+#3 DONE 0.1s
+
+#4 [runner 1/5] FROM docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293
+#4 resolve docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293 0.0s done
+#4 DONE 0.0s
+
+#5 [internal] load build context
+#5 transferring context: 11.54MB 0.8s done
+#5 DONE 0.9s
+
+#6 [builder  8/21] COPY lib/api-zod/package.json ./lib/api-zod/
+#6 CACHED
+
+#7 [runner 2/5] WORKDIR /app
+#7 CACHED
+
+#8 [builder  9/21] COPY lib/object-storage-web/package.json ./lib/object-storage-web/
+#8 CACHED
+
+#9 [builder 11/21] COPY lib/integrations-gemini-ai/package.json ./lib/integrations-gemini-ai/
+#9 CACHED
+
+#10 [builder 12/21] COPY artifacts/api-server/package.json ./artifacts/api-server/
+#10 CACHED
+
+#11 [builder 14/21] COPY artifacts/mockup-sandbox/package.json ./artifacts/mockup-sandbox/
+#11 CACHED
+
+#12 [builder  7/21] COPY lib/api-client-react/package.json ./lib/api-client-react/
+#12 CACHED
+
+#13 [builder  4/21] COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc ./
+#13 CACHED
+
+#14 [builder  6/21] COPY lib/api-spec/package.json ./lib/api-spec/
+#14 CACHED
+
+#15 [builder  3/21] RUN npm install -g pnpm@10
+#15 CACHED
+
+#16 [builder  5/21] COPY lib/db/package.json ./lib/db/
+#16 CACHED
+
+#17 [builder 10/21] COPY lib/integrations-anthropic-ai/package.json ./lib/integrations-anthropic-ai/
+#17 CACHED
+
+#18 [builder 16/21] RUN pnpm install --frozen-lockfile
+#18 CACHED
+
+#19 [builder 15/21] COPY scripts/package.json ./scripts/
+#19 CACHED
+
+#20 [builder 13/21] COPY artifacts/pwa-app/package.json ./artifacts/pwa-app/
+#20 CACHED
+
+#21 [builder 17/21] RUN npm_config_platform=linux npm_config_arch=x64 npm_config_libc=musl pnpm add -D     @rollup/rollup-linux-x64-musl     lightningcss-linux-x64-musl     @tailwindcss/oxide-linux-x64-musl     --ignore-workspace-root-check
+#21 CACHED
+
+#22 [builder 18/21] COPY . .
+#22 DONE 0.2s
+
+#23 [builder 19/21] RUN pnpm --filter @workspace/api-spec run codegen
+#23 0.787 
+#23 0.787 > @workspace/api-spec@0.0.0 codegen /app/lib/api-spec
+#23 0.787 > orval --config ./orval.config.ts
+#23 0.787 
+#23 1.582 🍻 orval v8.5.3 - A swagger client generator for typescript
+#23 1.909 api-client-react Cleaning output folder
+#23 4.294 🎉 api-client-react - Your OpenAPI spec has been converted into ready to use orval!
+#23 4.323 zod Cleaning output folder
+#23 5.319 🎉 zod - Your OpenAPI spec has been converted into ready to use orval!
+#23 DONE 5.4s
+
+#24 [builder 20/21] RUN pnpm --filter @workspace/api-server run build
+#24 0.750 
+#24 0.750 > @workspace/api-server@0.0.0 build /app/artifacts/api-server
+#24 0.750 > node ./build.mjs
+#24 0.750 
+#24 1.445 
+#24 1.445   dist/index.mjs                       5.6mb ⚠️
+#24 1.445   dist/pino-worker.mjs               153.4kb
+#24 1.445   dist/pino-file.mjs                 142.0kb
+#24 1.445   dist/pino-pretty.mjs               114.6kb
+#24 1.445   dist/thread-stream-worker.mjs        7.3kb
+#24 1.445   dist/index.mjs.map                   9.3mb
+#24 1.445   dist/pino-worker.mjs.map           256.9kb
+#24 1.445   dist/pino-file.mjs.map             229.0kb
+#24 1.445   dist/pino-pretty.mjs.map           203.9kb
+#24 1.445   dist/thread-stream-worker.mjs.map   12.0kb
+#24 1.445 
+#24 1.445 ⚡ Done in 573ms
+#24 DONE 1.5s
+
+#25 [builder 21/21] RUN pnpm --filter @workspace/pwa-app run build
+#25 0.705 
+#25 0.705 > @workspace/pwa-app@0.0.0 build /app/artifacts/pwa-app
+#25 0.705 > vite build --config vite.config.ts
+#25 0.705 
+#25 1.237 vite v7.3.2 building client environment for production...
+#25 1.349 transforming...
+#25 2.221 src/components/ui/tooltip.tsx (2:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+#25 3.244 src/components/ui/select.tsx (2:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+#25 3.250 src/components/ui/sheet.tsx (2:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+#25 3.375 src/components/ui/label.tsx (2:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+#25 8.967 ✓ 2810 modules transformed.
+#25 9.487 rendering chunks...
+#25 9.982 computing gzip size...
+#25 10.04 dist/public/registerSW.js                        0.13 kB
+#25 10.04 dist/public/manifest.webmanifest                 0.43 kB
+#25 10.04 dist/public/index.html                           1.69 kB │ gzip:   0.64 kB
+#25 10.04 dist/public/assets/index-DgDAwLvI.css          147.93 kB │ gzip:  23.05 kB
+#25 10.04 dist/public/assets/vendor-query-0FYzBrcc.js     35.30 kB │ gzip:  10.44 kB
+#25 10.04 dist/public/assets/vendor-ui-DSC7AWwo.js        94.73 kB │ gzip:  29.36 kB
+#25 10.04 dist/public/assets/vendor-react-Kft8tf5M.js    211.02 kB │ gzip:  67.95 kB
+#25 10.04 dist/public/assets/index-ixDY-y02.js         1,157.43 kB │ gzip: 282.33 kB
+#25 10.04 
+#25 10.04 (!) Some chunks are larger than 500 kB after minification. Consider:
+#25 10.04 - Using dynamic import() to code-split the application
+#25 10.04 - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+#25 10.04 - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+#25 10.04 ✓ built in 8.74s
+#25 13.09 
+#25 13.09 PWA v1.2.0
+#25 13.09 mode      generateSW
+#25 13.09 precache  14 entries (2733.49 KiB)
+#25 13.09 files generated
+#25 13.09   dist/public/sw.js
+#25 13.09   dist/public/workbox-e5619a87.js
+#25 DONE 13.3s
+
+#26 [runner 3/5] COPY --from=builder /app/node_modules ./node_modules
+#26 CACHED
+
+#27 [runner 4/5] COPY --from=builder /app/artifacts/api-server/dist ./dist
+#27 DONE 0.1s
+
+#28 [runner 5/5] COPY --from=builder /app/artifacts/pwa-app/dist/public ./public
+#28 DONE 0.0s
+
+#29 exporting to image
+#29 exporting layers
+#29 exporting layers 0.2s done
+#29 exporting manifest sha256:1fc31f99b27ffc045d58532f17233b21daffd844953101014067d7efd122bf07 done
+#29 exporting config sha256:96770db5b645c9323d633dedcfddf1126a9f1194a3d3c546e6d2f825920df053 done
+#29 pushing layers for registry.fly.io/union-local-1285:deployment-01KPM08HQE2B87CRRW92D807CH@sha256:1fc31f99b27ffc045d58532f17233b21daffd844953101014067d7efd122bf07
+#29 pushing layer sha256:f21f0be69b25169d5ff854d3246b24c268ed3d66deb4e2922a56a9793e6ee5ff
+#29 pushing layer sha256:79162180734b88ff8cc67216853fcd9fe1fc55fc61873d5bfd6e8f93d0897bf4 0.1s done
+#29 pushing layer sha256:5b13952e1d8659edc471defc9d4ab494c6b94b21edcdbc78bdc0097e391a91ba
+#29 pushing layer sha256:96770db5b645c9323d633dedcfddf1126a9f1194a3d3c546e6d2f825920df053
+#29 pushing layer sha256:1c7f9b6c07a76147766c1efbea9c1fba8d3bc76d8cbece5c13abe8afc1ffc36f
+#29 pushing layer sha256:4b0509c947003be1323a5a38977845d73b4980e37144df3290035d51059ccb48 0.0s done
+#29 pushing layer sha256:399a3bf1ba528533839619acfccb05a4a202a5579686d5e4c714b8ebcffa99d0
+#29 pushing layer sha256:c59f4feb5aa577638f9280b984a9bdd2d8a599eafeb85538ea635e3a54545cdb
+#29 pushing layer sha256:5d77bc5249b6ac4780bfeb7b557abb1d0370624bb09c4e26ad09acda8ccb77c0
+#29 pushing layer sha256:5b13952e1d8659edc471defc9d4ab494c6b94b21edcdbc78bdc0097e391a91ba 0.2s done
+#29 pushing layer sha256:c59f4feb5aa577638f9280b984a9bdd2d8a599eafeb85538ea635e3a54545cdb 0.1s done
+#29 pushing layer sha256:1c7f9b6c07a76147766c1efbea9c1fba8d3bc76d8cbece5c13abe8afc1ffc36f 0.3s done
+#29 pushing layer sha256:5d77bc5249b6ac4780bfeb7b557abb1d0370624bb09c4e26ad09acda8ccb77c0 0.3s done
+#29 pushing layer sha256:96770db5b645c9323d633dedcfddf1126a9f1194a3d3c546e6d2f825920df053 0.6s done
+#29 pushing layers for registry.fly.io/union-local-1285:deployment-01KPM08HQE2B87CRRW92D807CH@sha256:1fc31f99b27ffc045d58532f17233b21daffd844953101014067d7efd122bf07 0.8s done
+#29 pushing layer sha256:f21f0be69b25169d5ff854d3246b24c268ed3d66deb4e2922a56a9793e6ee5ff 0.7s done
+#29 pushing layer sha256:399a3bf1ba528533839619acfccb05a4a202a5579686d5e4c714b8ebcffa99d0 0.8s done
+#29 pushing manifest for registry.fly.io/union-local-1285:deployment-01KPM08HQE2B87CRRW92D807CH@sha256:1fc31f99b27ffc045d58532f17233b21daffd844953101014067d7efd122bf07
+#29 pushing manifest for registry.fly.io/union-local-1285:deployment-01KPM08HQE2B87CRRW92D807CH@sha256:1fc31f99b27ffc045d58532f17233b21daffd844953101014067d7efd122bf07 0.3s done
+#29 DONE 1.4s
+--> Build Summary:  (​)
+--> Building image done
+image: registry.fly.io/union-local-1285:deployment-01KPM08HQE2B87CRRW92D807CH
+image size: 131 MB
+
+Watch your deployment at https://fly.io/apps/union-local-1285/monitoring
+
+Updating existing machines in 'union-local-1285' with rolling strategy
+> Acquiring lease for 080446df595118
+> Acquired lease for 080446df595118
+> Updating machine config for 080446df595118
+> Updating 080446df595118 [app]
+> Updated machine config for 080446df595118
+> Waiting for machine 080446df595118 to reach a good state
+> Machine 080446df595118 reached started state
+
+WARNING The app is not listening on the expected address and will not be reachable by fly-proxy.
+You can fix this by configuring your app to listen on the following addresses:
+  - 0.0.0.0:8080
+Found these processes inside the machine with open listening sockets:
+ PROCESS        │ ADDRESSES                             
+────────────────┼───────────────────────────────────────
+ /.fly/hallpass │ [fdaa:5f:4dff:a7b:679:f877:a227:2]:22 
+
+> Running smoke checks on machine 080446df595118
+> Running machine checks on machine 080446df595118
+> Checking health of machine 080446df595118
+✔ Machine 080446df595118 is now in a good state
+> Clearing lease for 080446df595118
+✔ Cleared lease for 080446df595118
+Checking DNS configuration for union-local-1285.fly.dev
+✓ DNS configuration verified
+
+Visit your newly deployed app at https://union-local-1285.fly.dev/
+
+0s
+Post job cleanup.
+/usr/bin/git version
+git version 2.53.0
+Temporarily overriding HOME='/home/runner/work/_temp/2ccbdc67-fcb8-4bf8-b202-d7dd13a5fec7' before making global git config changes
+Adding repository directory to the temporary git global config as a safe directory
+/usr/bin/git config --global --add safe.directory /home/runner/work/UNIONIZE/UNIONIZE
+/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+http.https://github.com/.extraheader
+/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+0s
+Cleaning up orphan processes
+Warning: Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
