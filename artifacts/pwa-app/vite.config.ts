@@ -21,19 +21,21 @@ export default defineConfig({
       injectRegister: "auto",
       base: basePath,
       manifest: {
-        name: "Union Steward App",
-        short_name: "Union Local",
-        description: "Union Steward Management Portal",
+        name: "Unionize",
+        short_name: "Unionize",
+        description: "Unionize — Member & Steward Portal for Unifor Local 1285",
         theme_color: "#1a3a5c",
-        background_color: "#ffffff",
+        background_color: "#1a3a5c",
         display: "standalone",
         start_url: basePath,
         scope: basePath,
+        orientation: "portrait",
         icons: [
           {
             src: "icon-192.png",
             sizes: "192x192",
             type: "image/png",
+            purpose: "any",
           },
           {
             src: "icon-512.png",
