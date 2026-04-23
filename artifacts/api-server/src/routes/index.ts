@@ -13,6 +13,7 @@ import auditLogsRouter from "./audit-logs";
 import grievanceNotesRouter from "./grievance-notes";
 import memberPortalRouter from "./member-portal";
 import memberJournalRouter from "./member-journal";
+import meetingsRouter from "./meetings";
 import pushRouter, { initVapid } from "./push";
 import journalRouter from "./journal";
 import grievanceTemplatesRouter from "./grievance-templates";
@@ -80,6 +81,7 @@ router.use("/documents", requirePermission("documents.view"), documentsRouter);
 router.use("/anthropic", anthropicRouter);
 router.use("/settings", requirePermission("members.edit"), settingsRouter);
 router.use("/audit-logs", requirePermission("members.edit"), auditLogsRouter);
+router.use("/meetings", requirePermission("meetings.view"), meetingsRouter);
 router.use("/grievances/:grievanceId/notes", requirePermission("grievances.view"), grievanceNotesRouter);
 
 // ─── Push notifications: any authenticated user may subscribe / retrieve VAPID key ───
