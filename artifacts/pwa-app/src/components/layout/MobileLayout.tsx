@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Users, FileText, Bell, Bot, FolderOpen, Plus, LogOut, ChevronDown, ShieldCheck, CalendarDays, BellRing, BellOff, Sun, Moon, BarChart2, MapPin, Vote, Scale, Handshake, MessageSquareWarning, Trophy, Gavel } from "lucide-react";
+import { LayoutDashboard, Users, FileText, Bell, Bot, FolderOpen, Plus, LogOut, ChevronDown, ShieldCheck, BellRing, BellOff, Sun, Moon, BarChart2, MapPin, Vote, Scale, Handshake, MessageSquareWarning, Trophy, Gavel } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth, usePermissions } from "@/App";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
@@ -44,7 +44,6 @@ export function MobileLayout({ children }: { children: React.ReactNode }) {
     if (location.startsWith("/bulletins")) return "bulletins";
     if (location.startsWith("/documents")) return "documents";
     if (location.startsWith("/assistant")) return "assistant";
-    if (location.startsWith("/meetings")) return "meetings";
     if (location.startsWith("/stats")) return "stats";
     if (location.startsWith("/coverage")) return "coverage";
     if (location.startsWith("/polls")) return "polls";
@@ -60,7 +59,6 @@ export function MobileLayout({ children }: { children: React.ReactNode }) {
     if (section === "members" && can("members.edit")) return "/members/new";
     if (section === "grievances" && can("grievances.file")) return "/grievances/new";
     if (section === "bulletins" && can("bulletins.post")) return "/bulletins/new";
-    if (section === "meetings" && can("meetings.manage")) return "/meetings/new";
     return null;
   };
 
@@ -71,7 +69,6 @@ export function MobileLayout({ children }: { children: React.ReactNode }) {
     { id: "members", href: "/members", icon: Users, label: "Members" },
     { id: "grievances", href: "/grievances", icon: FileText, label: "Griev." },
     { id: "bulletins", href: "/bulletins", icon: Bell, label: "Bulletins" },
-    { id: "meetings", href: "/meetings", icon: CalendarDays, label: "Meetings" },
     { id: "documents", href: "/documents", icon: FolderOpen, label: "Docs" },
     { id: "assistant", href: "/assistant", icon: Bot, label: "AI" },
   ];
