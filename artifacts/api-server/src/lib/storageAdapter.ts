@@ -3,7 +3,7 @@
  *
  * Selects the backend at startup based on available env vars:
  *   - S3 / Tigris (Fly.io):  BUCKET_NAME + AWS_ENDPOINT_URL_S3 present
- *   - GCS (Replit):          PRIVATE_OBJECT_DIR present (Replit sidecar)
+ *   - GCS (legacy):          PRIVATE_OBJECT_DIR present (requires GCS service account)
  *
  * Both backends use the same objectPath convention: /objects/uploads/<uuid>
  */
@@ -86,7 +86,7 @@ async function s3Download(objectPath: string): Promise<{
   };
 }
 
-// ─── GCS / Replit backend ────────────────────────────────────────────────────
+// ─── GCS backend (legacy) ────────────────────────────────────────────────────
 
 function getPrivateObjectDir(): string {
   const dir = process.env.PRIVATE_OBJECT_DIR;
