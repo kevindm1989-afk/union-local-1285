@@ -34,7 +34,7 @@ import {
 } from "./lib/seedAdmin";
 const PgStore = connectPgSimple(session);
 const app: Express = express();
-// Trust the first proxy (Fly.io / Replit) so req.secure is correct when
+// Trust the first proxy (Fly.io) so req.secure is correct when
 // running behind HTTPS-terminating reverse proxies. Without this,
 // express-session refuses to set Secure cookies even though the browser
 // is talking HTTPS, causing logins to silently fail in production.
@@ -63,10 +63,6 @@ app.use(
     origin: (origin, callback) => {
       // Allow requests with no origin (mobile apps, curl, server-to-server)
       if (!origin) return callback(null, true);
-      // Allow any Replit subdomain in development
-      if (origin.endsWith(".replit.app") || origin.endsWith(".replit.dev") || origin.endsWith(".repl.co")) {
-        return callback(null, true);
-      }
       if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
