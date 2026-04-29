@@ -14,7 +14,7 @@ export function requirePermission(permission: string) {
 export function requireSteward(req: Request, res: Response, next: NextFunction) {
   const role = req.session?.role;
   if (!role || role === "member") {
-    res.status(403).json({ error: "Access denied", code: "FORBIDDEN" });
+    res.status(403).json({ error: "Insufficient role", code: "INSUFFICIENT_ROLE" });
     return;
   }
   next();
