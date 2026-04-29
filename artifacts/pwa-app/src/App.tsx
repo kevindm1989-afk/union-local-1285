@@ -46,6 +46,7 @@ import MemberPortalJournal from "@/pages/portal/MemberPortalJournal";
 import MemberRights from "@/pages/MemberRights";
 import BargainingAssistant from "@/pages/BargainingAssistant";
 import Complaints from "@/pages/Complaints";
+import ChangePassword from "@/pages/ChangePassword";
 
 export interface AuthUser {
   id: number;
@@ -54,6 +55,7 @@ export interface AuthUser {
   role: string;
   permissions: string[];
   linkedMemberId: number | null;
+  mustChangePassword: boolean;
 }
 
 interface AuthContextValue {
@@ -207,6 +209,17 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <Login onLoginSuccess={() => checkAuth()} />
+          <Toaster />
+        </TooltipProvider>
+      </QueryClientProvider>
+    );
+  }
+
+  if (user?.mustChangePassword) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <ChangePassword onComplete={checkAuth} />
           <Toaster />
         </TooltipProvider>
       </QueryClientProvider>

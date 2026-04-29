@@ -11,6 +11,7 @@ export const usersTable = pgTable("users", {
   isActive: boolean("is_active").notNull().default(true),
   linkedMemberId: integer("linked_member_id"),
   lastLoginAt: timestamp("last_login_at"),
+  mustChangePassword: boolean("must_change_password").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

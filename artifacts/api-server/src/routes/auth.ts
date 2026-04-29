@@ -34,6 +34,7 @@ declare module "express-session" {
     role: string;
     permissions: string[];
     linkedMemberId?: number;
+    mustChangePassword?: boolean;
   }
 }
 
@@ -74,6 +75,7 @@ router.post("/auth/login", loginLimiter, async (req: Request, res: Response) => 
     req.session.role = user.role;
     req.session.permissions = permissions;
     req.session.linkedMemberId = user.linkedMemberId ?? undefined;
+    req.session.mustChangePassword = user.mustChangePassword ?? false;
 
     // Track last login time (fire-and-forget)
     db.update(usersTable).set({ lastLoginAt: new Date() }).where(eq(usersTable.id, user.id)).catch(() => {});
@@ -91,6 +93,7 @@ router.post("/auth/login", loginLimiter, async (req: Request, res: Response) => 
         role: user.role,
         permissions,
         linkedMemberId: user.linkedMemberId ?? null,
+        mustChangePassword: user.mustChangePassword ?? false,
       });
     });
   } catch (err) {
@@ -124,8 +127,43 @@ router.get("/auth/me", (req: Request, res: Response) => {
     role: req.session.role,
     permissions: req.session.permissions ?? [],
     linkedMemberId: req.session.linkedMemberId ?? null,
+    mustChangePassword: req.session.mustChangePassword ?? false,
   });
 });
+
+/**
+ * POST /auth/me/change-password — authenticated: change own password (clears mustChangePassword flag)
+ */
+router.post("/auth/me/change-password", asyncHandler(async (req: Request, res: Response) => {
+  if (!req.session.userId) {
+    res.status(401).json({ error: "Not authenticated", code: "UNAUTHORIZED" });
+    return;
+  }
+  const { currentPassword, newPassword } = req.body ?? {};
+  if (!currentPassword || !newPassword) {
+    res.status(400).json({ error: "currentPassword and newPassword are required", code: "BAD_REQUEST" });
+    return;
+  }
+  const strengthError = validatePasswordStrength(String(newPassword));
+  if (strengthError) {
+    res.status(400).json({ error: strengthError, code: "BAD_REQUEST" });
+    return;
+  }
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.session.userId)).limit(1);
+  if (!user) {
+    res.status(404).json({ error: "User not found", code: "NOT_FOUND" });
+    return;
+  }
+  const valid = await bcrypt.compare(String(currentPassword), user.passwordHash);
+  if (!valid) {
+    res.status(401).json({ error: "Current password is incorrect", code: "UNAUTHORIZED" });
+    return;
+  }
+  const newHash = await bcrypt.hash(String(newPassword), 12);
+  await db.update(usersTable).set({ passwordHash: newHash, mustChangePassword: false }).where(eq(usersTable.id, user.id));
+  req.session.mustChangePassword = false;
+  res.json({ ok: true });
+}));
 
 /**
  * GET /auth/access-requests — admin only: list pending requests
@@ -174,6 +212,7 @@ router.post("/auth/access-requests/:id/approve", asyncHandler(async (req: Reques
         passwordHash,
         role: "steward",
         isActive: true,
+        mustChangePassword: true,
       })
       .returning({ id: usersTable.id, username: usersTable.username, displayName: usersTable.displayName });
 

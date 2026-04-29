@@ -658,6 +658,18 @@ export async function ensureMemberSelfServiceColumns(): Promise<void> {
   }
 }
 
+export async function ensureUserMustChangePassword(): Promise<void> {
+  const client = await pool.connect();
+  try {
+    await client.query(`
+      ALTER TABLE users
+        ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN NOT NULL DEFAULT FALSE
+    `);
+  } finally {
+    client.release();
+  }
+}
+
 export async function ensureDocumentVersioningColumns(): Promise<void> {
   const client = await pool.connect();
   try {
