@@ -1,62 +1,21 @@
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 import { logger } from "./logger";
 import { db, localSettingsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 
-// Resend client initialisation — two paths:
-//   Path 1: Direct API key (Fly.io production) — RESEND_API_KEY env var
-//   Path 2: Replit connector (Replit dev) — REPLIT_CONNECTORS_HOSTNAME present
-async function getResendClient(): Promise<{ client: Resend; from: string } | null> {
-  // Path 1: Direct API key — used on Fly.io and any non-Replit environment
-  if (process.env.RESEND_API_KEY) {
-    const from: string = process.env.EMAIL_FROM as string;
-    return { client: new Resend(process.env.RESEND_API_KEY), from };
+function getTransport(): { transport: nodemailer.Transporter; from: string } | null {
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+  if (!user || !pass) {
+    logger.warn("Email not configured: set SMTP_USER and SMTP_PASS env vars");
+    return null;
   }
-
-  // Path 2: Replit connector — tokens expire so client is never cached
-  if (process.env.REPLIT_CONNECTORS_HOSTNAME) {
-    try {
-      const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
-      const xReplitToken = process.env.REPL_IDENTITY
-        ? "repl " + process.env.REPL_IDENTITY
-        : process.env.WEB_REPL_RENEWAL
-          ? "depl " + process.env.WEB_REPL_RENEWAL
-          : null;
-
-      if (!xReplitToken) {
-        return null;
-      }
-
-      const data = await fetch(
-        "https://" + hostname + "/api/v2/connection?include_secrets=true&connector_names=resend",
-        {
-          headers: {
-            Accept: "application/json",
-            "X-Replit-Token": xReplitToken,
-          },
-        },
-      )
-        .then((r) => r.json())
-        .then((d: any) => d.items?.[0]);
-
-      if (!data?.settings?.api_key) {
-        logger.warn("Resend not connected — skipping email");
-        return null;
-      }
-
-      const fromEmail: string =
-        data.settings.from_email ||
-        process.env.EMAIL_FROM;
-
-      return { client: new Resend(data.settings.api_key), from: fromEmail };
-    } catch (err) {
-      logger.warn({ err }, "Could not initialise Resend client — skipping email");
-      return null;
-    }
-  }
-
-  logger.warn("Email not configured: set RESEND_API_KEY for production or connect Resend in Replit");
-  return null;
+  const from = process.env.EMAIL_FROM ?? user;
+  const transport = nodemailer.createTransport({
+    service: "gmail",
+    auth: { type: "login", user, pass },
+  });
+  return { transport, from };
 }
 
 async function send(opts: {
@@ -65,22 +24,18 @@ async function send(opts: {
   html: string;
   text: string;
 }): Promise<void> {
-  const resend = await getResendClient();
-  if (!resend) return;
+  const mailer = getTransport();
+  if (!mailer) return;
 
   try {
-    const { error } = await resend.client.emails.send({
-      from: resend.from,
+    await mailer.transport.sendMail({
+      from: mailer.from,
       to: opts.to,
       subject: opts.subject,
       html: opts.html,
       text: opts.text,
     });
-    if (error) {
-      logger.error({ error }, "Resend API error sending email");
-    } else {
-      logger.info({ to: opts.to, subject: opts.subject }, "Email sent via Resend");
-    }
+    logger.info({ to: opts.to, subject: opts.subject }, "Email sent via Gmail SMTP");
   } catch (err) {
     logger.error({ err }, "Failed to send email — continuing without notification");
   }
